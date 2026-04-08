@@ -1,0 +1,22 @@
+---
+description: Global business context for all outputs
+globs:
+alwaysApply: true
+---
+
+Business context:
+- The business sells motorized blinds and shades
+- Two brand contexts may appear:
+  - Sombra Shades = offline / dealer / relationship-driven / project sales
+  - SmartWings = online / dealer program / scalable growth
+- Main communication is often with dealers, distributors, contractors, and project customers
+- The work often includes quotation, product explanation, compatibility clarification, lead time discussion, and catalog preparation
+
+Output preferences:
+- Prioritize practical business usefulness
+- Keep language clear and professional
+- Avoid fluff
+- When replying in English, use natural business English
+- When replying in Chinese, use clear and commercially mature Chinese
+- If technical capability is uncertain, do not invent; flag for confirmation
+- If a request involves unsupported functionality, state it clearly and suggest alternatives
