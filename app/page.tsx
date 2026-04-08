@@ -1,65 +1,325 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useMemo, useState } from "react";
+import { CustomerForm } from "@/components/CustomerForm";
+import { CustomerTable } from "@/components/CustomerTable";
+import { FilterBar, type FilterState } from "@/components/FilterBar";
+import { StatsCards } from "@/components/StatsCards";
+import { isFollowUpDue, isFollowUpToday } from "@/lib/followup";
+import { calculateCustomerGrade, calculateCustomerScore } from "@/lib/grading";
+import {
+  addCustomer,
+  deleteCustomer,
+  getCustomers,
+  updateCustomer,
+} from "@/lib/storage";
+import type { Customer } from "@/lib/types";
+
+const defaultFilters: FilterState = {
+  grade: "ALL",
+  projectStage: "ALL",
+  keyword: "",
+};
+
+function matchesKeyword(customer: Customer, keyword: string): boolean {
+  const term = keyword.trim().toLowerCase();
+  if (!term) return true;
+  return [customer.name, customer.company, customer.email, customer.whatsapp]
+    .join(" ")
+    .toLowerCase()
+    .includes(term);
+}
+
+export default function HomePage() {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCustomers() {
+      try {
+        const list = await getCustomers();
+        if (!active) return;
+        setCustomers(list);
+        setErrorMessage("");
+      } catch (error) {
+        if (!active) return;
+        const message =
+          error instanceof Error ? error.message : "加载客户数据失败。";
+        setErrorMessage(message);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void loadCustomers();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const filteredCustomers = useMemo(() => {
+    return customers.filter((customer) => {
+      const grade = calculateCustomerGrade(customer);
+      const gradeMatch = filters.grade === "ALL" || filters.grade === grade;
+      const stageMatch =
+        filters.projectStage === "ALL" ||
+        filters.projectStage === customer.projectStage;
+      const keywordMatch = matchesKeyword(customer, filters.keyword);
+      return gradeMatch && stageMatch && keywordMatch;
+    });
+  }, [customers, filters]);
+
+  const stats = useMemo(() => {
+    const total = customers.length;
+    const aGradeCount = customers.filter(
+      (customer) => calculateCustomerGrade(customer) === "A",
+    ).length;
+    const dueCount = customers.filter((customer) => isFollowUpDue(customer)).length;
+    const todayCount = customers.filter((customer) =>
+      isFollowUpToday(customer),
+    ).length;
+
+    return { total, aGradeCount, dueCount, todayCount };
+  }, [customers]);
+
+  const openCreateModal = () => {
+    setFormMode("create");
+    setEditingCustomer(null);
+    setFormOpen(true);
+  };
+
+  const openEditModal = (customer: Customer) => {
+    setFormMode("edit");
+    setEditingCustomer(customer);
+    setFormOpen(true);
+  };
+
+  const handleDelete = async (customerId: string) => {
+    if (deletingId) return;
+    const confirmed = window.confirm("确定删除该客户吗？此操作不可撤销。");
+    if (!confirmed) return;
+    setDeletingId(customerId);
+    try {
+      const next = await deleteCustomer(customerId);
+      setCustomers(next);
+      if (selectedCustomer?.id === customerId) setSelectedCustomer(null);
+      setErrorMessage("");
+      setSuccessMessage("客户已删除。");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "删除客户失败，请稍后重试。";
+      setErrorMessage(message);
+      setSuccessMessage("");
+      alert(message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleSubmit = async (customer: Customer) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      if (formMode === "create") {
+        const inserted = await addCustomer(customer);
+        const latest = await getCustomers();
+        setCustomers(latest);
+        setFormOpen(false);
+        setSelectedCustomer(inserted);
+        setErrorMessage("");
+        setSuccessMessage("客户新增成功。");
+        console.log("save success");
+        return;
+      }
+
+      const updatedList = await updateCustomer(customer);
+      const latest = await getCustomers();
+      setCustomers(latest.length > 0 ? latest : updatedList);
+      setFormOpen(false);
+      setSelectedCustomer(
+        (latest.length > 0 ? latest : updatedList).find((c) => c.id === customer.id) ??
+          customer,
+      );
+      setErrorMessage("");
+      setSuccessMessage("客户更新成功。");
+      console.log("save success");
+    } catch (error) {
+      console.error(error);
+      const message =
+        error instanceof Error ? error.message : "保存客户失败，请稍后重试。";
+      setErrorMessage(message);
+      setSuccessMessage("");
+      alert(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="min-h-screen p-6 md:p-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+        <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900">
+              客户分级系统 CRM Lite
+            </h1>
+            <p className="text-sm text-slate-500">
+              电动窗帘/智能窗帘销售客户管理后台
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+          >
+            + 新增客户
+          </button>
+        </header>
+
+        <StatsCards
+          total={stats.total}
+          aGradeCount={stats.aGradeCount}
+          dueCount={stats.dueCount}
+          todayCount={stats.todayCount}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+
+        <FilterBar filters={filters} onChange={setFilters} />
+
+        {loading ? (
+          <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500 shadow-sm">
+            正在加载客户数据...
+          </div>
+        ) : null}
+
+        {errorMessage ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+            {errorMessage}
+          </div>
+        ) : null}
+
+        {successMessage ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+            {successMessage}
+          </div>
+        ) : null}
+
+        <div className="grid gap-5 xl:grid-cols-[2fr_1fr]">
+          <CustomerTable
+            customers={filteredCustomers}
+            onEdit={openEditModal}
+            onDelete={handleDelete}
+            onSelect={setSelectedCustomer}
+          />
+
+          <aside className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            {!selectedCustomer ? (
+              <div className="text-sm text-slate-500">
+                点击表格中的客户姓名可查看详情。
+              </div>
+            ) : (
+              <div className="space-y-3 text-sm">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    {selectedCustomer.name}
+                  </h2>
+                  <p className="text-slate-500">{selectedCustomer.company}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-slate-50 p-2">
+                    <p className="text-xs text-slate-500">客户等级</p>
+                    <p className="font-semibold text-slate-900">
+                      {calculateCustomerGrade(selectedCustomer)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-2">
+                    <p className="text-xs text-slate-500">客户评分</p>
+                    <p className="font-semibold text-slate-900">
+                      {calculateCustomerScore(selectedCustomer)}
+                    </p>
+                  </div>
+                </div>
+
+                <p>
+                  <span className="font-medium text-slate-700">品牌：</span>
+                  {selectedCustomer.brand || "-"}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">国家：</span>
+                  {selectedCustomer.country || "-"}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">邮箱：</span>
+                  {selectedCustomer.email || "-"}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">WhatsApp：</span>
+                  {selectedCustomer.whatsapp || "-"}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">来源：</span>
+                  {selectedCustomer.source}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">产品兴趣：</span>
+                  {selectedCustomer.interestedProducts || "-"}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">项目阶段：</span>
+                  {selectedCustomer.projectStage}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">预估数量：</span>
+                  {selectedCustomer.estimatedQuantity}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">最后联系：</span>
+                  {selectedCustomer.lastContactDate || "-"}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">下次跟进：</span>
+                  {selectedCustomer.nextFollowUpDate || "-"}
+                </p>
+
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <p className="mb-1 font-medium text-slate-700">备注</p>
+                  <p className="whitespace-pre-wrap text-slate-600">
+                    {selectedCustomer.notes || "-"}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => openEditModal(selectedCustomer)}
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-100"
+                >
+                  编辑当前客户
+                </button>
+              </div>
+            )}
+          </aside>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </div>
+
+      <CustomerForm
+        open={formOpen}
+        mode={formMode}
+        initialValue={editingCustomer}
+        onClose={() => setFormOpen(false)}
+        onSubmit={handleSubmit}
+        submitting={submitting || deletingId !== null}
+      />
+    </main>
   );
 }
