@@ -1,7 +1,9 @@
-export const CUSTOMER_GRADES = ["A", "B", "C", "D"] as const;
-export type CustomerGrade = (typeof CUSTOMER_GRADES)[number];
+export const CUSTOMER_LEVELS = ["A", "B", "C"] as const;
+export const CUSTOMER_STATUSES = ["new", "following", "closed", "invalid"] as const;
 
-/** 与 Supabase `customers` 表一致（snake_case） */
+export type CustomerLevel = (typeof CUSTOMER_LEVELS)[number];
+export type CustomerStatus = (typeof CUSTOMER_STATUSES)[number];
+
 export interface Customer {
   id: string;
   name: string;
@@ -13,19 +15,17 @@ export interface Customer {
   phone: string;
   position: string;
   email: string;
+  level: CustomerLevel;
+  status: CustomerStatus;
+  last_contacted_at: string | null;
+  created_by: string | null;
 }
 
-export interface CustomerRow {
+export interface FollowUp {
   id: string;
-  name: string | null;
-  business_type: string | null;
-  company: string | null;
-  address: string | null;
-  website: string | null;
-  apply_month: string | null;
-  phone: string | null;
-  position: string | null;
-  email: string | null;
+  customer_id: string;
+  content: string;
+  next_action: string;
+  created_at: string;
+  created_by: string | null;
 }
-
-export type CustomerInsertRow = Omit<CustomerRow, "id">;

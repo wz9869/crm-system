@@ -1,100 +1,96 @@
-import { supabase } from "@/src/lib/supabase";
-import type { Customer, CustomerInsertRow, CustomerRow } from "./types";
+import type { Customer, FollowUp } from "./types";
+import { createClient } from "./supabase-browser";
 
-const TABLE = "customers";
+function sb() {
+  return createClient();
+}
 
 function normalizeText(value: string | undefined | null): string | null {
   const trimmed = (value ?? "").trim();
   return trimmed === "" ? null : trimmed;
 }
 
-function toInsertRow(customer: Omit<Customer, "id">): CustomerInsertRow {
+function toInsertRow(c: Omit<Customer, "id">) {
   return {
-    name: normalizeText(customer.name),
-    business_type: normalizeText(customer.business_type),
-    company: normalizeText(customer.company),
-    address: normalizeText(customer.address),
-    website: normalizeText(customer.website),
-    apply_month: normalizeText(customer.apply_month),
-    phone: normalizeText(customer.phone),
-    position: normalizeText(customer.position),
-    email: normalizeText(customer.email),
+    name: normalizeText(c.name),
+    business_type: normalizeText(c.business_type),
+    company: normalizeText(c.company),
+    address: normalizeText(c.address),
+    website: normalizeText(c.website),
+    apply_month: normalizeText(c.apply_month),
+    phone: normalizeText(c.phone),
+    position: normalizeText(c.position),
+    email: normalizeText(c.email),
+    level: c.level || "C",
+    status: c.status || "new",
+    last_contacted_at: c.last_contacted_at || null,
+    created_by: c.created_by,
   };
 }
 
-function fromRow(row: CustomerRow): Customer {
+function fromRow(row: Record<string, unknown>): Customer {
   return {
-    id: row.id,
-    name: row.name ?? "",
-    business_type: row.business_type ?? "",
-    company: row.company ?? "",
-    address: row.address ?? "",
-    website: row.website ?? "",
-    apply_month: row.apply_month ?? "",
-    phone: row.phone ?? "",
-    position: row.position ?? "",
-    email: row.email ?? "",
+    id: row.id as string,
+    name: (row.name as string) ?? "",
+    business_type: (row.business_type as string) ?? "",
+    company: (row.company as string) ?? "",
+    address: (row.address as string) ?? "",
+    website: (row.website as string) ?? "",
+    apply_month: (row.apply_month as string) ?? "",
+    phone: (row.phone as string) ?? "",
+    position: (row.position as string) ?? "",
+    email: (row.email as string) ?? "",
+    level: ((row.level as string) ?? "C") as Customer["level"],
+    status: ((row.status as string) ?? "new") as Customer["status"],
+    last_contacted_at: (row.last_contacted_at as string) ?? null,
+    created_by: (row.created_by as string) ?? null,
   };
 }
 
-async function listRows(): Promise<CustomerRow[]> {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select("*")
-    .order("name", { ascending: true });
-
-  if (error) {
-    throw new Error(`Failed to fetch customers: ${error.message}`);
-  }
-
-  return (data ?? []) as CustomerRow[];
-}
+// ──── Customers ────
 
 export async function getCustomers(): Promise<Customer[]> {
-  const rows = await listRows();
-  return rows.map(fromRow);
+  const { data, error } = await sb()
+    .from("customers")
+    .select("*")
+    .order("name", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(fromRow);
 }
 
-export async function saveCustomers(customers: Customer[]): Promise<void> {
-  if (customers.length === 0) return;
-
-  const payload = customers.map(toInsertRow);
-  const { error } = await supabase.from(TABLE).insert(payload);
-
-  if (error) {
-    throw new Error(`Failed to save customers: ${error.message}`);
-  }
+export async function getCustomerById(id: string): Promise<Customer | null> {
+  const { data, error } = await sb()
+    .from("customers")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) return null;
+  return fromRow(data);
 }
 
-export async function addCustomer(customer: Customer): Promise<Customer> {
-  const { data, error } = await supabase
-    .from(TABLE)
+export async function addCustomer(
+  customer: Omit<Customer, "id">,
+): Promise<Customer> {
+  const { data, error } = await sb()
+    .from("customers")
     .insert(toInsertRow(customer))
     .select()
     .single();
-
-  if (error) {
-    throw new Error(`Failed to add customer: ${error.message}`);
-  }
-
-  return fromRow(data as CustomerRow);
+  if (error) throw new Error(error.message);
+  return fromRow(data);
 }
 
-export async function updateCustomer(updatedCustomer: Customer): Promise<Customer[]> {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .update(toInsertRow(updatedCustomer))
-    .eq("id", updatedCustomer.id)
-    .select("id")
-    .single();
+export async function updateCustomer(customer: Customer): Promise<void> {
+  const { error } = await sb()
+    .from("customers")
+    .update(toInsertRow(customer))
+    .eq("id", customer.id);
+  if (error) throw new Error(error.message);
+}
 
-  if (error) {
-    throw new Error(`Failed to update customer: ${error.message}`);
-  }
-  if (!data?.id) {
-    throw new Error("Failed to update customer: no matching record found.");
-  }
-  return getCustomers();
+export async function deleteCustomer(id: string): Promise<void> {
+  const { error } = await sb().from("customers").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function importCustomers(
@@ -102,11 +98,9 @@ export async function importCustomers(
 ): Promise<{ inserted: number; skipped: number }> {
   if (customers.length === 0) return { inserted: 0, skipped: 0 };
 
-  const existingRows = await listRows();
+  const existing = await getCustomers();
   const existingEmails = new Set(
-    existingRows
-      .map((r) => (r.email ?? "").trim().toLowerCase())
-      .filter(Boolean),
+    existing.map((c) => c.email.trim().toLowerCase()).filter(Boolean),
   );
 
   const seen = new Set<string>();
@@ -114,9 +108,7 @@ export async function importCustomers(
 
   for (const c of customers) {
     const email = c.email.trim().toLowerCase();
-    if (!email || existingEmails.has(email) || seen.has(email)) {
-      continue;
-    }
+    if (!email || existingEmails.has(email) || seen.has(email)) continue;
     seen.add(email);
     unique.push(c);
   }
@@ -124,36 +116,51 @@ export async function importCustomers(
   const skipped = customers.length - unique.length;
   if (unique.length === 0) return { inserted: 0, skipped };
 
-  const BATCH_SIZE = 200;
+  const BATCH = 200;
   let inserted = 0;
-
-  for (let i = 0; i < unique.length; i += BATCH_SIZE) {
-    const batch = unique.slice(i, i + BATCH_SIZE).map(toInsertRow);
-    const { error, count } = await supabase
-      .from(TABLE)
+  for (let i = 0; i < unique.length; i += BATCH) {
+    const batch = unique.slice(i, i + BATCH).map(toInsertRow);
+    const { error, count } = await sb()
+      .from("customers")
       .insert(batch, { count: "exact" });
-
-    if (error) {
-      throw new Error(
-        `Failed to import batch ${i + 1}–${i + batch.length}: ${error.message}`,
-      );
-    }
+    if (error) throw new Error(error.message);
     inserted += count ?? batch.length;
   }
-
   return { inserted, skipped };
 }
 
-export async function deleteCustomer(customerId: string): Promise<Customer[]> {
-  const { error, count } = await supabase
-    .from(TABLE)
-    .delete({ count: "exact" })
-    .eq("id", customerId);
-  if (error) {
-    throw new Error(`Failed to delete customer: ${error.message}`);
-  }
-  if ((count ?? 0) === 0) {
-    throw new Error("Failed to delete customer: no matching record found.");
-  }
-  return getCustomers();
+// ──── Follow-ups ────
+
+export async function getFollowUps(customerId: string): Promise<FollowUp[]> {
+  const { data, error } = await sb()
+    .from("follow_ups")
+    .select("*")
+    .eq("customer_id", customerId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as FollowUp[];
+}
+
+export async function addFollowUp(
+  followUp: Omit<FollowUp, "id" | "created_at">,
+): Promise<FollowUp> {
+  const { data, error } = await sb()
+    .from("follow_ups")
+    .insert({
+      customer_id: followUp.customer_id,
+      content: followUp.content,
+      next_action: followUp.next_action || null,
+      created_by: followUp.created_by,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  // Update last_contacted_at on customer
+  await sb()
+    .from("customers")
+    .update({ last_contacted_at: new Date().toISOString() })
+    .eq("id", followUp.customer_id);
+
+  return data as FollowUp;
 }

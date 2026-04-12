@@ -1,47 +1,56 @@
 "use client";
 
-import { stateFullName } from "@/lib/regions";
+import { CUSTOMER_LEVELS, CUSTOMER_STATUSES } from "@/lib/types";
 
 export interface FilterState {
   keyword: string;
-  state: string;
+  level: string;
+  status: string;
 }
 
 interface FilterBarProps {
   filters: FilterState;
-  stateOptions: string[];
   onChange: (next: FilterState) => void;
 }
 
-export function FilterBar({ filters, stateOptions, onChange }: FilterBarProps) {
+const sel =
+  "rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-200 focus:ring";
+
+export function FilterBar({ filters, onChange }: FilterBarProps) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="grid gap-3 md:grid-cols-4">
-        <label className="text-sm text-slate-700 md:col-span-3">
-          搜索（姓名/公司/邮箱/电话/官网/业务类型/职位）
-          <input
-            type="text"
-            value={filters.keyword}
-            onChange={(e) => onChange({ ...filters, keyword: e.target.value })}
-            placeholder="输入关键词..."
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-200 focus:ring"
-          />
-        </label>
-        <label className="text-sm text-slate-700">
-          州 / State
-          <select
-            value={filters.state}
-            onChange={(e) => onChange({ ...filters, state: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-200 focus:ring"
-          >
-            <option value="ALL">全部</option>
-            {stateOptions.map((abbr) => (
-              <option key={abbr} value={abbr}>
-                {abbr} - {stateFullName(abbr)}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <input
+          type="text"
+          value={filters.keyword}
+          onChange={(e) => onChange({ ...filters, keyword: e.target.value })}
+          placeholder="Search name, company, email..."
+          className={sel}
+        />
+        <select
+          value={filters.level}
+          onChange={(e) => onChange({ ...filters, level: e.target.value })}
+          className={sel}
+        >
+          <option value="ALL">All Levels</option>
+          {CUSTOMER_LEVELS.map((l) => (
+            <option key={l} value={l}>
+              Level {l}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filters.status}
+          onChange={(e) => onChange({ ...filters, status: e.target.value })}
+          className={sel}
+        >
+          <option value="ALL">All Statuses</option>
+          {CUSTOMER_STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );

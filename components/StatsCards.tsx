@@ -2,37 +2,32 @@
 
 interface StatsCardsProps {
   total: number;
-  aGradeCount: number;
-  dueCount: number;
-  todayCount: number;
+  aCount: number;
+  followingCount: number;
+  staleCount: number;
 }
 
-const cardStyle =
+const card =
   "rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow";
 
-export function StatsCards({
-  total,
-  aGradeCount,
-  dueCount,
-  todayCount,
-}: StatsCardsProps) {
+export function StatsCards({ total, aCount, followingCount, staleCount }: StatsCardsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <div className={cardStyle}>
-        <p className="text-sm text-slate-500">总客户数</p>
+      <div className={card}>
+        <p className="text-sm text-slate-500">Total Customers</p>
         <p className="mt-2 text-3xl font-semibold text-slate-900">{total}</p>
       </div>
-      <div className={cardStyle}>
-        <p className="text-sm text-slate-500">A级客户数</p>
-        <p className="mt-2 text-3xl font-semibold text-emerald-600">{aGradeCount}</p>
+      <div className={card}>
+        <p className="text-sm text-slate-500">A-Level</p>
+        <p className="mt-2 text-3xl font-semibold text-rose-600">{aCount}</p>
       </div>
-      <div className={cardStyle}>
-        <p className="text-sm text-slate-500">待跟进客户数</p>
-        <p className="mt-2 text-3xl font-semibold text-amber-600">{dueCount}</p>
+      <div className={card}>
+        <p className="text-sm text-slate-500">Following</p>
+        <p className="mt-2 text-3xl font-semibold text-emerald-600">{followingCount}</p>
       </div>
-      <div className={cardStyle}>
-        <p className="text-sm text-slate-500">今日需跟进</p>
-        <p className="mt-2 text-3xl font-semibold text-rose-600">{todayCount}</p>
+      <div className={card}>
+        <p className="text-sm text-slate-500">No Contact 7d+</p>
+        <p className="mt-2 text-3xl font-semibold text-amber-600">{staleCount}</p>
       </div>
     </div>
   );

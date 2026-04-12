@@ -1,35 +1,36 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
-import type { Customer } from "@/lib/types";
+import { useEffect, useState } from "react";
+import { CUSTOMER_LEVELS, CUSTOMER_STATUSES, type Customer } from "@/lib/types";
 
-interface CustomerFormProps {
+type FormValue = Omit<Customer, "id" | "created_by">;
+
+interface Props {
   open: boolean;
   mode: "create" | "edit";
   initialValue?: Customer | null;
   onClose: () => void;
-  onSubmit: (customer: Customer) => void;
+  onSubmit: (data: FormValue) => void;
   submitting?: boolean;
 }
 
-type CustomerFormValue = Omit<Customer, "id">;
-
-const emptyValue: CustomerFormValue = {
+const empty: FormValue = {
   name: "",
-  business_type: "",
   company: "",
+  business_type: "",
   address: "",
   website: "",
-  apply_month: "",
   phone: "",
   position: "",
   email: "",
+  apply_month: "",
+  level: "C",
+  status: "new",
+  last_contacted_at: null,
 };
 
-function inputClassName() {
-  return "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-200 focus:ring";
-}
+const inp =
+  "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-200 focus:ring";
 
 export function CustomerForm({
   open,
@@ -38,144 +39,99 @@ export function CustomerForm({
   onClose,
   onSubmit,
   submitting = false,
-}: CustomerFormProps) {
-  const [form, setForm] = useState<CustomerFormValue>(emptyValue);
-
-  const title = useMemo(
-    () => (mode === "create" ? "新增客户" : "编辑客户"),
-    [mode],
-  );
+}: Props) {
+  const [form, setForm] = useState<FormValue>(empty);
 
   useEffect(() => {
     if (!open) return;
     if (mode === "edit" && initialValue) {
-      const { id: _id, ...rest } = initialValue;
-      setForm({ ...emptyValue, ...rest });
-      return;
+      const { id: _, created_by: __, ...rest } = initialValue;
+      setForm({ ...empty, ...rest });
+    } else {
+      setForm(empty);
     }
-    setForm(emptyValue);
   }, [open, mode, initialValue]);
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    console.log("🔥 submit triggered");
-    e.preventDefault();
-    if (submitting) return;
-    const customer: Customer = {
-      id: mode === "edit" && initialValue ? initialValue.id : "",
-      ...form,
-    };
-    onSubmit(customer);
-  }
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
-          >
-            关闭
+          <h2 className="text-lg font-semibold text-slate-900">
+            {mode === "create" ? "Add Customer" : "Edit Customer"}
+          </h2>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(form);
+          }}
+          className="grid gap-3 sm:grid-cols-2"
+        >
           <label className="text-sm text-slate-700">
-            客户姓名 (name)
-            <input
-              className={inputClassName()}
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-            />
-          </label>
-          <label className="text-sm text-slate-700">
-            公司 (company)
-            <input
-              className={inputClassName()}
-              value={form.company}
-              onChange={(e) => setForm({ ...form, company: e.target.value })}
-              required
-            />
+            Name *
+            <input className={inp} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </label>
           <label className="text-sm text-slate-700">
-            业务类型 (business_type)
-            <input
-              className={inputClassName()}
-              value={form.business_type}
-              onChange={(e) => setForm({ ...form, business_type: e.target.value })}
-            />
-          </label>
-          <label className="text-sm text-slate-700 md:col-span-2">
-            地址 (address)
-            <input
-              className={inputClassName()}
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-            />
+            Company *
+            <input className={inp} value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} required />
           </label>
           <label className="text-sm text-slate-700">
-            官网 (website)
-            <input
-              className={inputClassName()}
-              value={form.website}
-              onChange={(e) => setForm({ ...form, website: e.target.value })}
-              placeholder="https://"
-            />
+            Email
+            <input type="email" className={inp} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </label>
           <label className="text-sm text-slate-700">
-            电话 (phone)
-            <input
-              className={inputClassName()}
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            />
+            Phone
+            <input className={inp} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           </label>
           <label className="text-sm text-slate-700">
-            职位 (position)
-            <input
-              className={inputClassName()}
-              value={form.position}
-              onChange={(e) => setForm({ ...form, position: e.target.value })}
-            />
+            Position
+            <input className={inp} value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} />
           </label>
           <label className="text-sm text-slate-700">
-            申请月份 (apply_month)
-            <input
-              type="month"
-              className={inputClassName()}
-              value={form.apply_month}
-              onChange={(e) => setForm({ ...form, apply_month: e.target.value })}
-            />
+            Business Type
+            <input className={inp} value={form.business_type} onChange={(e) => setForm({ ...form, business_type: e.target.value })} />
           </label>
-          <label className="text-sm text-slate-700 md:col-span-2">
-            邮箱 (email)
-            <input
-              type="email"
-              className={inputClassName()}
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
+          <label className="text-sm text-slate-700 sm:col-span-2">
+            Address
+            <input className={inp} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+          </label>
+          <label className="text-sm text-slate-700">
+            Website
+            <input className={inp} value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://" />
+          </label>
+          <label className="text-sm text-slate-700">
+            Apply Month
+            <input type="month" className={inp} value={form.apply_month} onChange={(e) => setForm({ ...form, apply_month: e.target.value })} />
+          </label>
+          <label className="text-sm text-slate-700">
+            Level
+            <select className={inp} value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value as FormValue["level"] })}>
+              {CUSTOMER_LEVELS.map((l) => (
+                <option key={l} value={l}>Level {l}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm text-slate-700">
+            Status
+            <select className={inp} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as FormValue["status"] })}>
+              {CUSTOMER_STATUSES.map((s) => (
+                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+              ))}
+            </select>
           </label>
 
-          <div className="mt-2 flex justify-end gap-2 md:col-span-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              取消
+          <div className="mt-2 flex justify-end gap-2 sm:col-span-2">
+            <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+              Cancel
             </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-            >
-              {submitting ? "保存中..." : "保存"}
+            <button type="submit" disabled={submitting} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
+              {submitting ? "Saving..." : "Save"}
             </button>
           </div>
         </form>
