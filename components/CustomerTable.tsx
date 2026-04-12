@@ -26,8 +26,11 @@ function parseDate(v: string): number {
   return Number.isNaN(d.getTime()) ? 0 : d.getTime();
 }
 
+const PAGE_SIZE = 50;
+
 export function CustomerTable({ customers, onDelete }: Props) {
   const [dateSort, setDateSort] = useState<SortDir>(null);
+  const [page, setPage] = useState(0);
 
   const sorted = useMemo(() => {
     if (!dateSort) return customers;
@@ -37,12 +40,20 @@ export function CustomerTable({ customers, onDelete }: Props) {
     });
   }, [customers, dateSort]);
 
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const paged = sorted.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+
+  // Reset to page 0 when customer list changes (filters)
+  useMemo(() => setPage(0), [customers]);
+
   const toggleSort = () => {
     setDateSort((prev) => {
       if (prev === null) return "desc";
       if (prev === "desc") return "asc";
       return null;
     });
+    setPage(0);
   };
 
   const sortIcon = dateSort === "asc" ? " ↑" : dateSort === "desc" ? " ↓" : " ↕";
@@ -74,7 +85,7 @@ export function CustomerTable({ customers, onDelete }: Props) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {sorted.map((c) => {
+          {paged.map((c) => {
             const days = daysAgo(c.last_contacted_at);
             const stale = days !== null && days >= 7;
             return (
@@ -121,6 +132,35 @@ export function CustomerTable({ customers, onDelete }: Props) {
           })}
         </tbody>
       </table>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
+          <p className="text-xs text-slate-500">
+            {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, sorted.length)} of {sorted.length}
+          </p>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              disabled={safePage === 0}
+              onClick={() => setPage(safePage - 1)}
+              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+            >
+              ← Prev
+            </button>
+            <span className="flex items-center px-2 text-xs text-slate-500">
+              {safePage + 1} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={safePage >= totalPages - 1}
+              onClick={() => setPage(safePage + 1)}
+              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
