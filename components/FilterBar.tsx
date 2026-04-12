@@ -1,6 +1,7 @@
 "use client";
 
 import { CUSTOMER_LEVELS, CUSTOMER_STATUSES } from "@/lib/types";
+import { CATEGORIES } from "@/lib/categories";
 import { stateFullName } from "@/lib/regions";
 
 export interface FilterState {
@@ -8,6 +9,7 @@ export interface FilterState {
   level: string;
   status: string;
   state: string;
+  category: string;
 }
 
 interface FilterBarProps {
@@ -22,7 +24,7 @@ const sel =
 export function FilterBar({ filters, stateOptions, onChange }: FilterBarProps) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <input
           type="text"
           value={filters.keyword}
@@ -48,6 +50,16 @@ export function FilterBar({ filters, stateOptions, onChange }: FilterBarProps) {
           <option value="ALL">All Statuses</option>
           {CUSTOMER_STATUSES.map((s) => (
             <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+          ))}
+        </select>
+        <select
+          value={filters.category}
+          onChange={(e) => onChange({ ...filters, category: e.target.value })}
+          className={sel}
+        >
+          <option value="ALL">All Categories</option>
+          {CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
         <select

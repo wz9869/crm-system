@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Customer } from "@/lib/types";
+import { categorize, categoryColor } from "@/lib/categories";
 import { LevelBadge } from "./LevelBadge";
 import { StatusBadge } from "./StatusBadge";
 
@@ -79,6 +80,7 @@ export function CustomerTable({ customers, onDelete }: Props) {
             <th className="px-4 py-3 font-medium">NAME</th>
             <th className="px-4 py-3 font-medium">EMAIL</th>
             <th className="px-4 py-3 font-medium">COMPANY</th>
+            <th className="px-4 py-3 font-medium">CATEGORY</th>
             <th className="px-4 py-3 font-medium">LEVEL</th>
             <th className="px-4 py-3 font-medium">STATUS</th>
             <th className="px-4 py-3 font-medium">LAST CONTACT</th>
@@ -102,6 +104,16 @@ export function CustomerTable({ customers, onDelete }: Props) {
                 </td>
                 <td className="px-4 py-3 text-slate-700 break-all">{c.email || "—"}</td>
                 <td className="px-4 py-3 text-slate-700">{c.company || "—"}</td>
+                <td className="px-4 py-3">
+                  {(() => {
+                    const cat = categorize(c.business_type);
+                    return (
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${categoryColor(cat)}`}>
+                        {cat}
+                      </span>
+                    );
+                  })()}
+                </td>
                 <td className="px-4 py-3">
                   <LevelBadge level={c.level} />
                 </td>

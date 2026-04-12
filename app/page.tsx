@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getCustomers, addCustomer, deleteCustomer, importCustomers } from "@/lib/storage";
 import { buildStateOptions, extractStateAbbr } from "@/lib/regions";
+import { categorize } from "@/lib/categories";
 import type { Customer } from "@/lib/types";
 import { Navbar } from "@/components/Navbar";
 import { StatsCards } from "@/components/StatsCards";
@@ -23,7 +24,7 @@ export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<FilterState>({ keyword: "", level: "ALL", status: "ALL", state: "ALL" });
+  const [filters, setFilters] = useState<FilterState>({ keyword: "", level: "ALL", status: "ALL", state: "ALL", category: "ALL" });
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +53,7 @@ export default function HomePage() {
     return customers.filter((c) => {
       if (filters.level !== "ALL" && c.level !== filters.level) return false;
       if (filters.status !== "ALL" && c.status !== filters.status) return false;
+      if (filters.category !== "ALL" && categorize(c.business_type) !== filters.category) return false;
       if (filters.state !== "ALL" && extractStateAbbr(c.address) !== filters.state) return false;
       if (filters.keyword) {
         const kw = filters.keyword.toLowerCase();
