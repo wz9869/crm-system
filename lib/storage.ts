@@ -3,81 +3,37 @@ import type { Customer, CustomerInsertRow, CustomerRow } from "./types";
 
 const TABLE = "customers";
 
-function normalizeDate(value: string): string | null {
-  const trimmed = value.trim();
+function normalizeText(value: string | undefined | null): string | null {
+  const trimmed = (value ?? "").trim();
   return trimmed === "" ? null : trimmed;
-}
-
-function normalizeText(value: string): string | null {
-  const trimmed = value.trim();
-  return trimmed === "" ? null : trimmed;
-}
-
-function normalizeNumber(value: number): number {
-  if (!Number.isFinite(value) || value < 0) return 0;
-  return Math.round(value);
 }
 
 function toInsertRow(customer: Customer): CustomerInsertRow {
   return {
     name: normalizeText(customer.name),
+    business_type: normalizeText(customer.business_type),
     company: normalizeText(customer.company),
-    brand: normalizeText(customer.brand),
-    country: normalizeText(customer.country),
+    address: normalizeText(customer.address),
+    website: normalizeText(customer.website),
+    apply_month: normalizeText(customer.apply_month),
+    phone: normalizeText(customer.phone),
+    position: normalizeText(customer.position),
     email: normalizeText(customer.email),
-    whatsapp: normalizeText(customer.whatsapp),
-    source: customer.source,
-    interested_products: normalizeText(customer.interestedProducts),
-    project_stage: customer.projectStage,
-    estimated_quantity: normalizeNumber(customer.estimatedQuantity),
-    budget_clarity: customer.budgetClarity,
-    response_speed: customer.responseSpeed,
-    last_contact_date: normalizeDate(customer.lastContactDate),
-    next_follow_up_date: normalizeDate(customer.nextFollowUpDate),
-    notes: normalizeText(customer.notes),
   };
-}
-
-function normalizeSource(value: CustomerRow["source"]): Customer["source"] {
-  return value ?? "Other";
-}
-
-function normalizeProjectStage(
-  value: CustomerRow["project_stage"],
-): Customer["projectStage"] {
-  return value ?? "New Inquiry";
-}
-
-function normalizeBudget(
-  value: CustomerRow["budget_clarity"],
-): Customer["budgetClarity"] {
-  return value ?? "Medium";
-}
-
-function normalizeSpeed(
-  value: CustomerRow["response_speed"],
-): Customer["responseSpeed"] {
-  return value ?? "Medium";
 }
 
 function fromRow(row: CustomerRow): Customer {
   return {
     id: row.id,
     name: row.name ?? "",
+    business_type: row.business_type ?? "",
     company: row.company ?? "",
-    brand: row.brand ?? "",
-    country: row.country ?? "",
+    address: row.address ?? "",
+    website: row.website ?? "",
+    apply_month: row.apply_month ?? "",
+    phone: row.phone ?? "",
+    position: row.position ?? "",
     email: row.email ?? "",
-    whatsapp: row.whatsapp ?? "",
-    source: normalizeSource(row.source),
-    interestedProducts: row.interested_products ?? "",
-    projectStage: normalizeProjectStage(row.project_stage),
-    estimatedQuantity: row.estimated_quantity ?? 0,
-    budgetClarity: normalizeBudget(row.budget_clarity),
-    responseSpeed: normalizeSpeed(row.response_speed),
-    lastContactDate: row.last_contact_date ?? "",
-    nextFollowUpDate: row.next_follow_up_date ?? "",
-    notes: row.notes ?? "",
   };
 }
 
@@ -85,7 +41,7 @@ async function listRows(): Promise<CustomerRow[]> {
   const { data, error } = await supabase
     .from(TABLE)
     .select("*")
-    .order("next_follow_up_date", { ascending: true });
+    .order("name", { ascending: true });
 
   if (error) {
     throw new Error(`Failed to fetch customers: ${error.message}`);

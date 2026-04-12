@@ -2,13 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import {
-  BUDGET_CLARITY_LEVELS,
-  PROJECT_STAGES,
-  RESPONSE_SPEED_LEVELS,
-  SOURCES,
-  type Customer,
-} from "@/lib/types";
+import type { Customer } from "@/lib/types";
 
 interface CustomerFormProps {
   open: boolean;
@@ -23,20 +17,14 @@ type CustomerFormValue = Omit<Customer, "id">;
 
 const emptyValue: CustomerFormValue = {
   name: "",
+  business_type: "",
   company: "",
-  brand: "",
-  country: "",
+  address: "",
+  website: "",
+  apply_month: "",
+  phone: "",
+  position: "",
   email: "",
-  whatsapp: "",
-  source: "Google",
-  interestedProducts: "",
-  projectStage: "New Inquiry",
-  estimatedQuantity: 1,
-  budgetClarity: "Medium",
-  responseSpeed: "Medium",
-  lastContactDate: "",
-  nextFollowUpDate: "",
-  notes: "",
 };
 
 function inputClassName() {
@@ -62,7 +50,7 @@ export function CustomerForm({
     if (!open) return;
     if (mode === "edit" && initialValue) {
       const { id: _id, ...rest } = initialValue;
-      setForm(rest);
+      setForm({ ...emptyValue, ...rest });
       return;
     }
     setForm(emptyValue);
@@ -71,12 +59,11 @@ export function CustomerForm({
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     console.log("🔥 submit triggered");
     e.preventDefault();
+    if (submitting) return;
     const customer: Customer = {
       id: mode === "edit" && initialValue ? initialValue.id : "",
       ...form,
-      estimatedQuantity: Number(form.estimatedQuantity) || 0,
     };
-    if (submitting) return;
     onSubmit(customer);
   }
 
@@ -98,7 +85,7 @@ export function CustomerForm({
 
         <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-2">
           <label className="text-sm text-slate-700">
-            客户姓名
+            客户姓名 (name)
             <input
               className={inputClassName()}
               value={form.name}
@@ -107,7 +94,7 @@ export function CustomerForm({
             />
           </label>
           <label className="text-sm text-slate-700">
-            公司
+            公司 (company)
             <input
               className={inputClassName()}
               value={form.company}
@@ -115,169 +102,63 @@ export function CustomerForm({
               required
             />
           </label>
-
           <label className="text-sm text-slate-700">
-            品牌
+            业务类型 (business_type)
             <input
               className={inputClassName()}
-              value={form.brand}
-              onChange={(e) => setForm({ ...form, brand: e.target.value })}
-              placeholder="SmartWings / Sombra Shades"
+              value={form.business_type}
+              onChange={(e) => setForm({ ...form, business_type: e.target.value })}
+            />
+          </label>
+          <label className="text-sm text-slate-700 md:col-span-2">
+            地址 (address)
+            <input
+              className={inputClassName()}
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
             />
           </label>
           <label className="text-sm text-slate-700">
-            国家
+            官网 (website)
             <input
               className={inputClassName()}
-              value={form.country}
-              onChange={(e) => setForm({ ...form, country: e.target.value })}
+              value={form.website}
+              onChange={(e) => setForm({ ...form, website: e.target.value })}
+              placeholder="https://"
             />
           </label>
-
           <label className="text-sm text-slate-700">
-            邮箱
+            电话 (phone)
+            <input
+              className={inputClassName()}
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
+          </label>
+          <label className="text-sm text-slate-700">
+            职位 (position)
+            <input
+              className={inputClassName()}
+              value={form.position}
+              onChange={(e) => setForm({ ...form, position: e.target.value })}
+            />
+          </label>
+          <label className="text-sm text-slate-700">
+            申请月份 (apply_month)
+            <input
+              type="month"
+              className={inputClassName()}
+              value={form.apply_month}
+              onChange={(e) => setForm({ ...form, apply_month: e.target.value })}
+            />
+          </label>
+          <label className="text-sm text-slate-700 md:col-span-2">
+            邮箱 (email)
             <input
               type="email"
               className={inputClassName()}
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
-          </label>
-          <label className="text-sm text-slate-700">
-            WhatsApp
-            <input
-              className={inputClassName()}
-              value={form.whatsapp}
-              onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
-            />
-          </label>
-
-          <label className="text-sm text-slate-700">
-            来源
-            <select
-              className={inputClassName()}
-              value={form.source}
-              onChange={(e) =>
-                setForm({ ...form, source: e.target.value as Customer["source"] })
-              }
-            >
-              {SOURCES.map((source) => (
-                <option key={source} value={source}>
-                  {source}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm text-slate-700">
-            项目阶段
-            <select
-              className={inputClassName()}
-              value={form.projectStage}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  projectStage: e.target.value as Customer["projectStage"],
-                })
-              }
-            >
-              {PROJECT_STAGES.map((stage) => (
-                <option key={stage} value={stage}>
-                  {stage}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="text-sm text-slate-700">
-            预估数量
-            <input
-              type="number"
-              min={0}
-              className={inputClassName()}
-              value={form.estimatedQuantity}
-              onChange={(e) =>
-                setForm({ ...form, estimatedQuantity: Number(e.target.value) })
-              }
-            />
-          </label>
-          <label className="text-sm text-slate-700">
-            预算明确度
-            <select
-              className={inputClassName()}
-              value={form.budgetClarity}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  budgetClarity: e.target.value as Customer["budgetClarity"],
-                })
-              }
-            >
-              {BUDGET_CLARITY_LEVELS.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="text-sm text-slate-700">
-            响应速度
-            <select
-              className={inputClassName()}
-              value={form.responseSpeed}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  responseSpeed: e.target.value as Customer["responseSpeed"],
-                })
-              }
-            >
-              {RESPONSE_SPEED_LEVELS.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="text-sm text-slate-700">
-            最后联系日期
-            <input
-              type="date"
-              className={inputClassName()}
-              value={form.lastContactDate}
-              onChange={(e) => setForm({ ...form, lastContactDate: e.target.value })}
-            />
-          </label>
-          <label className="text-sm text-slate-700">
-            下次跟进日期
-            <input
-              type="date"
-              className={inputClassName()}
-              value={form.nextFollowUpDate}
-              onChange={(e) => setForm({ ...form, nextFollowUpDate: e.target.value })}
-            />
-          </label>
-
-          <label className="text-sm text-slate-700 md:col-span-2">
-            感兴趣产品
-            <input
-              className={inputClassName()}
-              value={form.interestedProducts}
-              onChange={(e) =>
-                setForm({ ...form, interestedProducts: e.target.value })
-              }
-              placeholder="Motorized Roller Shades, Woven Shades..."
-            />
-          </label>
-
-          <label className="text-sm text-slate-700 md:col-span-2">
-            备注
-            <textarea
-              className={inputClassName()}
-              rows={4}
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
           </label>
 

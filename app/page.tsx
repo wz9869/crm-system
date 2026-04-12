@@ -5,8 +5,6 @@ import { CustomerForm } from "@/components/CustomerForm";
 import { CustomerTable } from "@/components/CustomerTable";
 import { FilterBar, type FilterState } from "@/components/FilterBar";
 import { StatsCards } from "@/components/StatsCards";
-import { isFollowUpDue, isFollowUpToday } from "@/lib/followup";
-import { calculateCustomerGrade, calculateCustomerScore } from "@/lib/grading";
 import {
   addCustomer,
   deleteCustomer,
@@ -16,15 +14,27 @@ import {
 import type { Customer } from "@/lib/types";
 
 const defaultFilters: FilterState = {
-  grade: "ALL",
-  projectStage: "ALL",
   keyword: "",
 };
+
+function cell(v: string): string {
+  return v.trim() ? v : "—";
+}
 
 function matchesKeyword(customer: Customer, keyword: string): boolean {
   const term = keyword.trim().toLowerCase();
   if (!term) return true;
-  return [customer.name, customer.company, customer.email, customer.whatsapp]
+  return [
+    customer.name,
+    customer.company,
+    customer.email,
+    customer.phone,
+    customer.website,
+    customer.business_type,
+    customer.position,
+    customer.address,
+    customer.apply_month,
+  ]
     .join(" ")
     .toLowerCase()
     .includes(term);
@@ -69,28 +79,12 @@ export default function HomePage() {
   }, []);
 
   const filteredCustomers = useMemo(() => {
-    return customers.filter((customer) => {
-      const grade = calculateCustomerGrade(customer);
-      const gradeMatch = filters.grade === "ALL" || filters.grade === grade;
-      const stageMatch =
-        filters.projectStage === "ALL" ||
-        filters.projectStage === customer.projectStage;
-      const keywordMatch = matchesKeyword(customer, filters.keyword);
-      return gradeMatch && stageMatch && keywordMatch;
-    });
-  }, [customers, filters]);
+    return customers.filter((c) => matchesKeyword(c, filters.keyword));
+  }, [customers, filters.keyword]);
 
   const stats = useMemo(() => {
     const total = customers.length;
-    const aGradeCount = customers.filter(
-      (customer) => calculateCustomerGrade(customer) === "A",
-    ).length;
-    const dueCount = customers.filter((customer) => isFollowUpDue(customer)).length;
-    const todayCount = customers.filter((customer) =>
-      isFollowUpToday(customer),
-    ).length;
-
-    return { total, aGradeCount, dueCount, todayCount };
+    return { total, aGradeCount: 0, dueCount: 0, todayCount: 0 };
   }, [customers]);
 
   const openCreateModal = () => {
@@ -231,73 +225,43 @@ export default function HomePage() {
               <div className="space-y-3 text-sm">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">
-                    {selectedCustomer.name}
+                    {cell(selectedCustomer.name)}
                   </h2>
-                  <p className="text-slate-500">{selectedCustomer.company}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg bg-slate-50 p-2">
-                    <p className="text-xs text-slate-500">客户等级</p>
-                    <p className="font-semibold text-slate-900">
-                      {calculateCustomerGrade(selectedCustomer)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-slate-50 p-2">
-                    <p className="text-xs text-slate-500">客户评分</p>
-                    <p className="font-semibold text-slate-900">
-                      {calculateCustomerScore(selectedCustomer)}
-                    </p>
-                  </div>
+                  <p className="text-slate-500">{cell(selectedCustomer.company)}</p>
                 </div>
 
                 <p>
-                  <span className="font-medium text-slate-700">品牌：</span>
-                  {selectedCustomer.brand || "-"}
+                  <span className="font-medium text-slate-700">公司：</span>
+                  {cell(selectedCustomer.company)}
                 </p>
                 <p>
-                  <span className="font-medium text-slate-700">国家：</span>
-                  {selectedCustomer.country || "-"}
+                  <span className="font-medium text-slate-700">地址：</span>
+                  {cell(selectedCustomer.address)}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">官网：</span>
+                  {cell(selectedCustomer.website)}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">电话：</span>
+                  {cell(selectedCustomer.phone)}
                 </p>
                 <p>
                   <span className="font-medium text-slate-700">邮箱：</span>
-                  {selectedCustomer.email || "-"}
+                  {cell(selectedCustomer.email)}
                 </p>
                 <p>
-                  <span className="font-medium text-slate-700">WhatsApp：</span>
-                  {selectedCustomer.whatsapp || "-"}
+                  <span className="font-medium text-slate-700">职位：</span>
+                  {cell(selectedCustomer.position)}
                 </p>
                 <p>
-                  <span className="font-medium text-slate-700">来源：</span>
-                  {selectedCustomer.source}
+                  <span className="font-medium text-slate-700">业务类型：</span>
+                  {cell(selectedCustomer.business_type)}
                 </p>
                 <p>
-                  <span className="font-medium text-slate-700">产品兴趣：</span>
-                  {selectedCustomer.interestedProducts || "-"}
+                  <span className="font-medium text-slate-700">申请月份：</span>
+                  {cell(selectedCustomer.apply_month)}
                 </p>
-                <p>
-                  <span className="font-medium text-slate-700">项目阶段：</span>
-                  {selectedCustomer.projectStage}
-                </p>
-                <p>
-                  <span className="font-medium text-slate-700">预估数量：</span>
-                  {selectedCustomer.estimatedQuantity}
-                </p>
-                <p>
-                  <span className="font-medium text-slate-700">最后联系：</span>
-                  {selectedCustomer.lastContactDate || "-"}
-                </p>
-                <p>
-                  <span className="font-medium text-slate-700">下次跟进：</span>
-                  {selectedCustomer.nextFollowUpDate || "-"}
-                </p>
-
-                <div className="rounded-lg bg-slate-50 p-3">
-                  <p className="mb-1 font-medium text-slate-700">备注</p>
-                  <p className="whitespace-pre-wrap text-slate-600">
-                    {selectedCustomer.notes || "-"}
-                  </p>
-                </div>
 
                 <button
                   type="button"

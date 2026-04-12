@@ -1,25 +1,8 @@
-import type { Customer } from "./types";
-
-function toDateOnly(input: string): Date | null {
-  if (!input) return null;
-  const date = new Date(input);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+/** 当前表无跟进日期字段；占位供旧引用 */
+export function isFollowUpDue(_customer: unknown): boolean {
+  return false;
 }
 
-function todayDateOnly(): Date {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-}
-
-export function isFollowUpDue(customer: Customer): boolean {
-  const nextDate = toDateOnly(customer.nextFollowUpDate);
-  if (!nextDate) return false;
-  return nextDate.getTime() <= todayDateOnly().getTime();
-}
-
-export function isFollowUpToday(customer: Customer): boolean {
-  const nextDate = toDateOnly(customer.nextFollowUpDate);
-  if (!nextDate) return false;
-  return nextDate.getTime() === todayDateOnly().getTime();
+export function isFollowUpToday(_customer: unknown): boolean {
+  return false;
 }
