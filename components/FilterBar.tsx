@@ -1,17 +1,19 @@
 "use client";
 
+import { stateFullName } from "@/lib/regions";
+
 export interface FilterState {
   keyword: string;
-  region: string;
+  state: string;
 }
 
 interface FilterBarProps {
   filters: FilterState;
-  regionOptions: string[];
+  stateOptions: string[];
   onChange: (next: FilterState) => void;
 }
 
-export function FilterBar({ filters, regionOptions, onChange }: FilterBarProps) {
+export function FilterBar({ filters, stateOptions, onChange }: FilterBarProps) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="grid gap-3 md:grid-cols-4">
@@ -26,16 +28,16 @@ export function FilterBar({ filters, regionOptions, onChange }: FilterBarProps) 
           />
         </label>
         <label className="text-sm text-slate-700">
-          地区筛选
+          州 / State
           <select
-            value={filters.region}
-            onChange={(e) => onChange({ ...filters, region: e.target.value })}
+            value={filters.state}
+            onChange={(e) => onChange({ ...filters, state: e.target.value })}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-200 focus:ring"
           >
-            <option value="ALL">全部地区</option>
-            {regionOptions.map((r) => (
-              <option key={r} value={r}>
-                {r}
+            <option value="ALL">全部</option>
+            {stateOptions.map((abbr) => (
+              <option key={abbr} value={abbr}>
+                {abbr} - {stateFullName(abbr)}
               </option>
             ))}
           </select>
