@@ -1,6 +1,9 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { Customer } from "@/lib/types";
+
+type SortDir = "asc" | "desc" | null;
 
 interface CustomerTableProps {
   customers: Customer[];
@@ -13,12 +16,38 @@ function cell(v: string): string {
   return v.trim() ? v : "—";
 }
 
+function parseDate(v: string): number {
+  if (!v.trim()) return 0;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+}
+
 export function CustomerTable({
   customers,
   onEdit,
   onDelete,
   onSelect,
 }: CustomerTableProps) {
+  const [dateSort, setDateSort] = useState<SortDir>(null);
+
+  const sorted = useMemo(() => {
+    if (!dateSort) return customers;
+    return [...customers].sort((a, b) => {
+      const diff = parseDate(a.apply_month) - parseDate(b.apply_month);
+      return dateSort === "asc" ? diff : -diff;
+    });
+  }, [customers, dateSort]);
+
+  const toggleDateSort = () => {
+    setDateSort((prev) => {
+      if (prev === null) return "desc";
+      if (prev === "desc") return "asc";
+      return null;
+    });
+  };
+
+  const sortIcon = dateSort === "asc" ? " ↑" : dateSort === "desc" ? " ↓" : " ↕";
+
   if (customers.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
@@ -33,7 +62,16 @@ export function CustomerTable({
         <table className="w-full text-sm table-fixed">
           <thead className="bg-slate-50 text-left text-slate-600 uppercase">
             <tr>
-              <th className="w-[10%] px-3 py-3 font-medium">APPLICATION DATE</th>
+              <th className="w-[10%] px-3 py-3 font-medium">
+                <button
+                  type="button"
+                  onClick={toggleDateSort}
+                  className="inline-flex items-center gap-1 hover:text-slate-900"
+                >
+                  APPLICATION DATE
+                  <span className="text-xs">{sortIcon}</span>
+                </button>
+              </th>
               <th className="w-[10%] px-3 py-3 font-medium">NAME</th>
               <th className="w-[14%] px-3 py-3 font-medium">COMPANY</th>
               <th className="w-[12%] px-3 py-3 font-medium">BUSINESS TYPE</th>
@@ -44,7 +82,7 @@ export function CustomerTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {customers.map((c) => (
+            {sorted.map((c) => (
               <tr key={c.id} className="hover:bg-slate-50">
                 <td className="px-3 py-3 text-slate-700">{cell(c.apply_month)}</td>
                 <td className="px-3 py-3">
