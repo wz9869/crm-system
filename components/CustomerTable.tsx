@@ -77,6 +77,7 @@ export function CustomerTable({ customers, onDelete }: Props) {
               </button>
             </th>
             <th className="px-4 py-3 font-medium">NAME</th>
+            <th className="px-4 py-3 font-medium">EMAIL</th>
             <th className="px-4 py-3 font-medium">COMPANY</th>
             <th className="px-4 py-3 font-medium">LEVEL</th>
             <th className="px-4 py-3 font-medium">STATUS</th>
@@ -99,6 +100,7 @@ export function CustomerTable({ customers, onDelete }: Props) {
                     {c.name || "—"}
                   </Link>
                 </td>
+                <td className="px-4 py-3 text-slate-700 break-all">{c.email || "—"}</td>
                 <td className="px-4 py-3 text-slate-700">{c.company || "—"}</td>
                 <td className="px-4 py-3">
                   <LevelBadge level={c.level} />
