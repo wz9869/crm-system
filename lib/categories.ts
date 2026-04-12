@@ -12,13 +12,13 @@ export const CATEGORIES = [
 export type Category = (typeof CATEGORIES)[number];
 
 const rules: [Category, RegExp][] = [
-  ["Window Coverings", /\b(window|blind|shade|shutter|curtain|drapery|draper|drap|screen|awning|tint|film|coverings?|sun\s*protect|solar.*shade|pergola)\b/i],
-  ["Smart Home / AV", /\b(smart\s*home|home\s*auto|automation|integrat|a\/?v|audio|video|low\s*voltage|control4|iot|home\s*theater|home\s*entertainment|home\s*tech|crestron|savant|security.*auto|surveillance)\b/i],
-  ["Design", /\b(interior\s*design|design\s*(studio|firm|service|consultant|build)|decorator|decor|stag|furnish|upholster|boutique|home\s*d[eé]cor)\b/i],
-  ["Construction", /\b(construct|contractor|general\s*contract|builder|build|remodel|renovat|handyman|home\s*improve|home\s*repair|plumb|roof|floor|cabinet|millwork|subcontract)\b/i],
-  ["Retail / Dealer", /\b(retail|dealer|wholesale|distribut|store|shop|e-?commerce|online|resell|resale|merchant|supply|supplier)\b/i],
-  ["Architecture", /\b(architect|planning)\b/i],
-  ["Real Estate", /\b(real\s*estate|property\s*manage|develop|investor|rental)\b/i],
+  ["Window Coverings", /\b(window|blinds?|shad(?:e|ing)|shutter|curtain|drapery|draper|drap|screen|awning|tint|film|covering|coverings|sun\s*protect|solar.*shade|pergola|bli\s*ds|motorized\s*shade|skylight)/i],
+  ["Smart Home / AV", /\b(smart\s*home|smart\s*homes|samart|home\s*auto|automat|integrat|integreator|a\/v|audio|video|low\s*volt|control4|iot|home\s*theater|home\s*entertainment|home\s*tech|crestron|savant|security|surveillance|domotique|network|av\b|home\s*technology|technolgy\s*integrat)/i],
+  ["Design", /\b(interior|design\s*(studio|firm|service|consultant|build)|designer|decorator|decor(?:at)?|stag|furnish|upholster|boutique|home\s*d[eé]cor|interiors|workroom|home\s*design)/i],
+  ["Construction", /\b(construct|contruct|contractor|contracter|general\s*contract|homebuilder|builder|build|remodel|renovat|handyman|home\s*improve|home\s*repair|home\s*renovation|plumb|roof|floor|cabinet|millwork|subcontract|contract(?:ing|or|ers)|electrical|electric|install(?:er|ation)?|carpent|home\s*service)/i],
+  ["Retail / Dealer", /\b(retail|dealer|wholesale|distribut|store|shop|e-?commerce|online|resell|resale|merchant|supply|supplier|wholesaler|retailer|whole\s*seller|sales\b)/i],
+  ["Architecture", /\b(architect)/i],
+  ["Real Estate", /\b(real\s*estate|real\s*eatate|property\s*manage|property\s*remodel|develop|investor|rental)/i],
 ];
 
 export function categorize(businessType: string): Category {
