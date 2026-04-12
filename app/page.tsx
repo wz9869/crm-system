@@ -11,10 +11,12 @@ import {
   getCustomers,
   updateCustomer,
 } from "@/lib/storage";
+import { buildRegionOptions, extractRegion } from "@/lib/regions";
 import type { Customer } from "@/lib/types";
 
 const defaultFilters: FilterState = {
   keyword: "",
+  region: "ALL",
 };
 
 function cell(v: string): string {
@@ -78,9 +80,19 @@ export default function HomePage() {
     };
   }, []);
 
+  const regionOptions = useMemo(
+    () => buildRegionOptions(customers.map((c) => c.address)),
+    [customers],
+  );
+
   const filteredCustomers = useMemo(() => {
-    return customers.filter((c) => matchesKeyword(c, filters.keyword));
-  }, [customers, filters.keyword]);
+    return customers.filter((c) => {
+      if (!matchesKeyword(c, filters.keyword)) return false;
+      if (filters.region !== "ALL" && extractRegion(c.address) !== filters.region)
+        return false;
+      return true;
+    });
+  }, [customers, filters.keyword, filters.region]);
 
   const stats = useMemo(() => {
     const total = customers.length;
@@ -188,7 +200,7 @@ export default function HomePage() {
           todayCount={stats.todayCount}
         />
 
-        <FilterBar filters={filters} onChange={setFilters} />
+        <FilterBar filters={filters} regionOptions={regionOptions} onChange={setFilters} />
 
         {loading ? (
           <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500 shadow-sm">
