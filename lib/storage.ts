@@ -8,7 +8,7 @@ function normalizeText(value: string | undefined | null): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
-function toInsertRow(customer: Customer): CustomerInsertRow {
+function toInsertRow(customer: Omit<Customer, "id">): CustomerInsertRow {
   return {
     name: normalizeText(customer.name),
     business_type: normalizeText(customer.business_type),
@@ -95,6 +95,31 @@ export async function updateCustomer(updatedCustomer: Customer): Promise<Custome
     throw new Error("Failed to update customer: no matching record found.");
   }
   return getCustomers();
+}
+
+export async function importCustomers(
+  customers: Omit<Customer, "id">[],
+): Promise<{ inserted: number }> {
+  if (customers.length === 0) return { inserted: 0 };
+
+  const BATCH_SIZE = 200;
+  let inserted = 0;
+
+  for (let i = 0; i < customers.length; i += BATCH_SIZE) {
+    const batch = customers.slice(i, i + BATCH_SIZE).map(toInsertRow);
+    const { error, count } = await supabase
+      .from(TABLE)
+      .insert(batch, { count: "exact" });
+
+    if (error) {
+      throw new Error(
+        `Failed to import batch ${i + 1}–${i + batch.length}: ${error.message}`,
+      );
+    }
+    inserted += count ?? batch.length;
+  }
+
+  return { inserted };
 }
 
 export async function deleteCustomer(customerId: string): Promise<Customer[]> {

@@ -5,10 +5,12 @@ import { CustomerForm } from "@/components/CustomerForm";
 import { CustomerTable } from "@/components/CustomerTable";
 import { FilterBar, type FilterState } from "@/components/FilterBar";
 import { StatsCards } from "@/components/StatsCards";
+import { ImportCustomers } from "@/components/ImportCustomers";
 import {
   addCustomer,
   deleteCustomer,
   getCustomers,
+  importCustomers,
   updateCustomer,
 } from "@/lib/storage";
 import { buildStateOptions, extractStateAbbr } from "@/lib/regions";
@@ -54,6 +56,7 @@ export default function HomePage() {
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -172,6 +175,14 @@ export default function HomePage() {
     }
   };
 
+  const handleImport = async (rows: Omit<Customer, "id">[]) => {
+    const { inserted } = await importCustomers(rows);
+    const latest = await getCustomers();
+    setCustomers(latest);
+    setSuccessMessage(`成功导入 ${inserted} 位客户。`);
+    setErrorMessage("");
+  };
+
   return (
     <main className="min-h-screen p-6 md:p-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
@@ -184,13 +195,22 @@ export default function HomePage() {
               电动窗帘/智能窗帘销售客户管理后台
             </p>
           </div>
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-          >
-            + 新增客户
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setImportOpen(true)}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              导入 Excel / CSV
+            </button>
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              + 新增客户
+            </button>
+          </div>
         </header>
 
         <StatsCards
@@ -295,6 +315,12 @@ export default function HomePage() {
         onClose={() => setFormOpen(false)}
         onSubmit={handleSubmit}
         submitting={submitting || deletingId !== null}
+      />
+
+      <ImportCustomers
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImport}
       />
     </main>
   );
