@@ -31,20 +31,22 @@ export function CustomerTable({
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
       <div>
         <table className="w-full text-sm table-fixed">
-          <thead className="bg-slate-50 text-left text-slate-600">
+          <thead className="bg-slate-50 text-left text-slate-600 uppercase">
             <tr>
-              <th className="w-[12%] px-3 py-3 font-medium">name</th>
-              <th className="w-[16%] px-3 py-3 font-medium">company</th>
-              <th className="w-[14%] px-3 py-3 font-medium">business_type</th>
-              <th className="w-[10%] px-3 py-3 font-medium">position</th>
-              <th className="w-[24%] px-3 py-3 font-medium">email</th>
-              <th className="w-[14%] px-3 py-3 font-medium">phone</th>
+              <th className="w-[10%] px-3 py-3 font-medium">APPLICATION DATE</th>
+              <th className="w-[10%] px-3 py-3 font-medium">NAME</th>
+              <th className="w-[14%] px-3 py-3 font-medium">COMPANY</th>
+              <th className="w-[12%] px-3 py-3 font-medium">BUSINESS TYPE</th>
+              <th className="w-[9%] px-3 py-3 font-medium">POSITION</th>
+              <th className="w-[22%] px-3 py-3 font-medium">EMAIL</th>
+              <th className="w-[13%] px-3 py-3 font-medium">PHONE</th>
               <th className="w-[10%] px-3 py-3 font-medium">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {customers.map((c) => (
               <tr key={c.id} className="hover:bg-slate-50">
+                <td className="px-3 py-3 text-slate-700">{cell(c.apply_month)}</td>
                 <td className="px-3 py-3">
                   <button
                     type="button"
