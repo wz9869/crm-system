@@ -99,14 +99,36 @@ export async function updateCustomer(updatedCustomer: Customer): Promise<Custome
 
 export async function importCustomers(
   customers: Omit<Customer, "id">[],
-): Promise<{ inserted: number }> {
-  if (customers.length === 0) return { inserted: 0 };
+): Promise<{ inserted: number; skipped: number }> {
+  if (customers.length === 0) return { inserted: 0, skipped: 0 };
+
+  const existingRows = await listRows();
+  const existingEmails = new Set(
+    existingRows
+      .map((r) => (r.email ?? "").trim().toLowerCase())
+      .filter(Boolean),
+  );
+
+  const seen = new Set<string>();
+  const unique: Omit<Customer, "id">[] = [];
+
+  for (const c of customers) {
+    const email = c.email.trim().toLowerCase();
+    if (!email || existingEmails.has(email) || seen.has(email)) {
+      continue;
+    }
+    seen.add(email);
+    unique.push(c);
+  }
+
+  const skipped = customers.length - unique.length;
+  if (unique.length === 0) return { inserted: 0, skipped };
 
   const BATCH_SIZE = 200;
   let inserted = 0;
 
-  for (let i = 0; i < customers.length; i += BATCH_SIZE) {
-    const batch = customers.slice(i, i + BATCH_SIZE).map(toInsertRow);
+  for (let i = 0; i < unique.length; i += BATCH_SIZE) {
+    const batch = unique.slice(i, i + BATCH_SIZE).map(toInsertRow);
     const { error, count } = await supabase
       .from(TABLE)
       .insert(batch, { count: "exact" });
@@ -119,7 +141,7 @@ export async function importCustomers(
     inserted += count ?? batch.length;
   }
 
-  return { inserted };
+  return { inserted, skipped };
 }
 
 export async function deleteCustomer(customerId: string): Promise<Customer[]> {

@@ -176,10 +176,12 @@ export default function HomePage() {
   };
 
   const handleImport = async (rows: Omit<Customer, "id">[]) => {
-    const { inserted } = await importCustomers(rows);
+    const { inserted, skipped } = await importCustomers(rows);
     const latest = await getCustomers();
     setCustomers(latest);
-    setSuccessMessage(`成功导入 ${inserted} 位客户。`);
+    const parts = [`成功导入 ${inserted} 位客户`];
+    if (skipped > 0) parts.push(`跳过 ${skipped} 条重复邮箱`);
+    setSuccessMessage(parts.join("，") + "。");
     setErrorMessage("");
   };
 
