@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getCustomers, addCustomer, deleteCustomer, importCustomers } from "@/lib/storage";
+import { buildStateOptions, extractStateAbbr } from "@/lib/regions";
 import type { Customer } from "@/lib/types";
 import { Navbar } from "@/components/Navbar";
 import { StatsCards } from "@/components/StatsCards";
@@ -22,7 +23,7 @@ export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<FilterState>({ keyword: "", level: "ALL", status: "ALL" });
+  const [filters, setFilters] = useState<FilterState>({ keyword: "", level: "ALL", status: "ALL", state: "ALL" });
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -42,10 +43,16 @@ export default function HomePage() {
     if (!authLoading && user) void load();
   }, [authLoading, user, load]);
 
+  const stateOptions = useMemo(
+    () => buildStateOptions(customers.map((c) => c.address)),
+    [customers],
+  );
+
   const filtered = useMemo(() => {
     return customers.filter((c) => {
       if (filters.level !== "ALL" && c.level !== filters.level) return false;
       if (filters.status !== "ALL" && c.status !== filters.status) return false;
+      if (filters.state !== "ALL" && extractStateAbbr(c.address) !== filters.state) return false;
       if (filters.keyword) {
         const kw = filters.keyword.toLowerCase();
         const hay = [c.name, c.company, c.email, c.phone, c.address].join(" ").toLowerCase();
@@ -126,7 +133,7 @@ export default function HomePage() {
         </div>
 
         <StatsCards {...stats} />
-        <FilterBar filters={filters} onChange={setFilters} />
+        <FilterBar filters={filters} stateOptions={stateOptions} onChange={setFilters} />
 
         {msg && (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">

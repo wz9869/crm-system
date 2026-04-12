@@ -28,36 +28,22 @@ CREATE INDEX IF NOT EXISTS idx_customers_created_by ON customers(created_by);
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE follow_ups ENABLE ROW LEVEL SECURITY;
 
--- 4. RLS policies for customers
+-- 4. RLS for customers — any authenticated user has full access
 DROP POLICY IF EXISTS "Users see own customers" ON customers;
-CREATE POLICY "Users see own customers" ON customers
-  FOR SELECT USING (created_by = auth.uid());
-
 DROP POLICY IF EXISTS "Users insert own customers" ON customers;
-CREATE POLICY "Users insert own customers" ON customers
-  FOR INSERT WITH CHECK (created_by = auth.uid());
-
 DROP POLICY IF EXISTS "Users update own customers" ON customers;
-CREATE POLICY "Users update own customers" ON customers
-  FOR UPDATE USING (created_by = auth.uid());
-
 DROP POLICY IF EXISTS "Users delete own customers" ON customers;
-CREATE POLICY "Users delete own customers" ON customers
-  FOR DELETE USING (created_by = auth.uid());
 
--- 5. RLS policies for follow_ups
+CREATE POLICY "Authenticated users full access" ON customers
+  FOR ALL USING (auth.uid() IS NOT NULL)
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- 5. RLS for follow_ups — any authenticated user has full access
 DROP POLICY IF EXISTS "Users see own follow_ups" ON follow_ups;
-CREATE POLICY "Users see own follow_ups" ON follow_ups
-  FOR SELECT USING (created_by = auth.uid());
-
 DROP POLICY IF EXISTS "Users insert own follow_ups" ON follow_ups;
-CREATE POLICY "Users insert own follow_ups" ON follow_ups
-  FOR INSERT WITH CHECK (created_by = auth.uid());
-
 DROP POLICY IF EXISTS "Users update own follow_ups" ON follow_ups;
-CREATE POLICY "Users update own follow_ups" ON follow_ups
-  FOR UPDATE USING (created_by = auth.uid());
-
 DROP POLICY IF EXISTS "Users delete own follow_ups" ON follow_ups;
-CREATE POLICY "Users delete own follow_ups" ON follow_ups
-  FOR DELETE USING (created_by = auth.uid());
+
+CREATE POLICY "Authenticated users full access" ON follow_ups
+  FOR ALL USING (auth.uid() IS NOT NULL)
+  WITH CHECK (auth.uid() IS NOT NULL);
