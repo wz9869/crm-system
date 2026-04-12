@@ -28,18 +28,18 @@ export function CustomerTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
+      <div>
+        <table className="w-full text-sm table-fixed">
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr>
-              <th className="px-3 py-3 font-medium">name</th>
-              <th className="px-3 py-3 font-medium">company</th>
-              <th className="px-3 py-3 font-medium">business_type</th>
-              <th className="px-3 py-3 font-medium">position</th>
-              <th className="px-3 py-3 font-medium">email</th>
-              <th className="px-3 py-3 font-medium">phone</th>
-              <th className="px-3 py-3 font-medium">操作</th>
+              <th className="w-[12%] px-3 py-3 font-medium">name</th>
+              <th className="w-[16%] px-3 py-3 font-medium">company</th>
+              <th className="w-[14%] px-3 py-3 font-medium">business_type</th>
+              <th className="w-[10%] px-3 py-3 font-medium">position</th>
+              <th className="w-[24%] px-3 py-3 font-medium">email</th>
+              <th className="w-[14%] px-3 py-3 font-medium">phone</th>
+              <th className="w-[10%] px-3 py-3 font-medium">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -57,7 +57,7 @@ export function CustomerTable({
                 <td className="px-3 py-3 text-slate-700">{cell(c.company)}</td>
                 <td className="px-3 py-3 text-slate-700">{cell(c.business_type)}</td>
                 <td className="px-3 py-3 text-slate-700">{cell(c.position)}</td>
-                <td className="max-w-[200px] truncate px-3 py-3 text-slate-700">
+                <td className="px-3 py-3 text-slate-700 break-all min-w-[180px]">
                   {cell(c.email)}
                 </td>
                 <td className="px-3 py-3 text-slate-700">{cell(c.phone)}</td>
