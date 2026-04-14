@@ -40,6 +40,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "admin") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
+
   return response;
 }
 

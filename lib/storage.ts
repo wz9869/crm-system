@@ -147,6 +147,24 @@ export async function importCustomers(
   return { inserted, skipped };
 }
 
+// ──── Profiles ────
+
+export interface Profile {
+  id: string;
+  email: string;
+  role: "admin" | "staff";
+  created_at: string;
+}
+
+export async function getProfiles(): Promise<Profile[]> {
+  const { data, error } = await sb()
+    .from("profiles")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Profile[];
+}
+
 // ──── Follow-ups ────
 
 export async function getFollowUps(customerId: string): Promise<FollowUp[]> {

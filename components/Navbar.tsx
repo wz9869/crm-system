@@ -25,6 +25,15 @@ export function Navbar() {
           SmartWings Dealer CRM
         </button>
         <div className="flex items-center gap-3 text-sm">
+          {role === "admin" && (
+            <button
+              type="button"
+              onClick={() => router.push("/admin/accounts")}
+              className="text-slate-600 hover:text-emerald-600"
+            >
+              Staff Accounts
+            </button>
+          )}
           {role && (
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${roleBadge[role] ?? roleBadge.staff}`}
