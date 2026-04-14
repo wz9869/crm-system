@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getCustomers, addCustomer, deleteCustomer, importCustomers } from "@/lib/storage";
 import { buildStateOptions, extractStateAbbr } from "@/lib/regions";
 import { categorize } from "@/lib/categories";
+import { exportCustomersToExcel } from "@/lib/export";
 import type { Customer } from "@/lib/types";
 import { Navbar } from "@/components/Navbar";
 import { StatsCards } from "@/components/StatsCards";
@@ -117,6 +118,13 @@ export default function HomePage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-semibold text-slate-900">Customers</h1>
           <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => exportCustomersToExcel(filtered)}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              Export
+            </button>
             <button
               type="button"
               onClick={() => setImportOpen(true)}
