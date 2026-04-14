@@ -3,19 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: NextRequest) {
   try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
-    const missing = [
-      !url && "SUPABASE_URL",
-      !anonKey && "ANON_KEY",
-      !serviceKey && "SERVICE_ROLE_KEY",
-    ].filter(Boolean);
-
-    if (missing.length > 0) {
+    if (!url || !anonKey || !serviceKey) {
       return NextResponse.json(
-        { error: `Missing env: ${missing.join(", ")}` },
+        { error: `Missing env: ${[!url && "URL", !anonKey && "ANON", !serviceKey && "SERVICE"].filter(Boolean).join(", ")}` },
         { status: 500 },
       );
     }
