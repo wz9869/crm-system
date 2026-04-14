@@ -116,7 +116,7 @@ export default function HomePage() {
       <Navbar />
       <main className="mx-auto max-w-7xl space-y-5 p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-semibold text-slate-900">Customers</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">SmartWings Dealer CRM System</h1>
           <div className="flex gap-2">
             <button
               type="button"
