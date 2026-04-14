@@ -11,7 +11,7 @@ type SortDir = "asc" | "desc" | null;
 
 interface Props {
   customers: Customer[];
-  onDelete: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 function daysAgo(dateStr: string | null): number | null {
@@ -84,7 +84,7 @@ export function CustomerTable({ customers, onDelete }: Props) {
             <th className="px-4 py-3 font-medium">LEVEL</th>
             <th className="px-4 py-3 font-medium">STATUS</th>
             <th className="px-4 py-3 font-medium">LAST CONTACT</th>
-            <th className="px-4 py-3 font-medium">ACTIONS</th>
+            {onDelete && <th className="px-4 py-3 font-medium">ACTIONS</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -130,17 +130,19 @@ export function CustomerTable({ customers, onDelete }: Props) {
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm("Delete this customer?")) onDelete(c.id);
-                    }}
-                    className="rounded-md border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
-                  >
-                    Delete
-                  </button>
-                </td>
+                {onDelete && (
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm("Delete this customer?")) onDelete(c.id);
+                      }}
+                      className="rounded-md border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                )}
               </tr>
             );
           })}

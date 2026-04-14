@@ -3,8 +3,13 @@
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 
+const roleBadge: Record<string, string> = {
+  admin: "bg-amber-100 text-amber-700",
+  staff: "bg-slate-100 text-slate-600",
+};
+
 export function Navbar() {
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
   const router = useRouter();
 
   if (!user) return null;
@@ -17,9 +22,16 @@ export function Navbar() {
           onClick={() => router.push("/")}
           className="text-lg font-semibold text-slate-900 hover:text-emerald-600"
         >
-          CRM Lite
+          SmartWings Dealer CRM
         </button>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-3 text-sm">
+          {role && (
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${roleBadge[role] ?? roleBadge.staff}`}
+            >
+              {role.toUpperCase()}
+            </span>
+          )}
           <span className="text-slate-500">{user.email}</span>
           <button
             type="button"

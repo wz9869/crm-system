@@ -46,7 +46,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <h1 className="mb-1 text-xl font-semibold text-slate-900">
-          CRM Lite
+          SmartWings Dealer CRM
         </h1>
         <p className="mb-6 text-sm text-slate-500">
           {mode === "login" ? "Sign in to your account" : "Create a new account"}

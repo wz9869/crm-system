@@ -22,7 +22,8 @@ function daysAgo(d: string | null): number | null {
 }
 
 export default function HomePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
+  const isAdmin = role === "admin";
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<FilterState>({ keyword: "", level: "ALL", status: "ALL", state: "ALL", category: "ALL" });
@@ -118,27 +119,31 @@ export default function HomePage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-semibold text-slate-900">SmartWings Dealer CRM</h1>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => exportCustomersToExcel(filtered)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              Export
-            </button>
-            <button
-              type="button"
-              onClick={() => setImportOpen(true)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              Import
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormOpen(true)}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-            >
-              + Add Customer
-            </button>
+            {isAdmin && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => exportCustomersToExcel(filtered)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                >
+                  Export
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportOpen(true)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                >
+                  Import
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormOpen(true)}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                >
+                  + Add Customer
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -157,22 +162,25 @@ export default function HomePage() {
         {loading ? (
           <p className="text-sm text-slate-500">Loading...</p>
         ) : (
-          <CustomerTable customers={filtered} onDelete={handleDelete} />
+          <CustomerTable customers={filtered} onDelete={isAdmin ? handleDelete : undefined} />
         )}
 
-        <CustomerForm
-          open={formOpen}
-          mode="create"
-          onClose={() => setFormOpen(false)}
-          onSubmit={handleAdd}
-          submitting={submitting}
-        />
-
-        <ImportCustomers
-          open={importOpen}
-          onClose={() => setImportOpen(false)}
-          onImport={handleImport}
-        />
+        {isAdmin && (
+          <>
+            <CustomerForm
+              open={formOpen}
+              mode="create"
+              onClose={() => setFormOpen(false)}
+              onSubmit={handleAdd}
+              submitting={submitting}
+            />
+            <ImportCustomers
+              open={importOpen}
+              onClose={() => setImportOpen(false)}
+              onImport={handleImport}
+            />
+          </>
+        )}
       </main>
     </>
   );
