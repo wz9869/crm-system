@@ -36,6 +36,27 @@ export default function AccountsPage() {
     void load();
   }, [authLoading, user, role, router, load]);
 
+  const handleDelete = async (id: string, email: string) => {
+    if (!confirm(`Delete account ${email}?`)) return;
+    setMsg(null);
+    try {
+      const res = await fetch("/api/admin/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMsg({ type: "err", text: data.error ?? "Failed to delete" });
+        return;
+      }
+      setMsg({ type: "ok", text: `Account ${email} deleted` });
+      await load();
+    } catch {
+      setMsg({ type: "err", text: "Network error" });
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
@@ -130,18 +151,19 @@ export default function AccountsPage() {
                 <th className="px-4 py-3 font-medium">EMAIL</th>
                 <th className="px-4 py-3 font-medium">ROLE</th>
                 <th className="px-4 py-3 font-medium">CREATED AT</th>
+                <th className="px-4 py-3 font-medium">ACTIONS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={3} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
                     Loading...
                   </td>
                 </tr>
               ) : profiles.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
                     No accounts yet.
                   </td>
                 </tr>
@@ -162,6 +184,17 @@ export default function AccountsPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-500">
                       {new Date(p.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      {p.role !== "admin" && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(p.id, p.email)}
+                          className="rounded-md border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
