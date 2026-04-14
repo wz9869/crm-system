@@ -93,23 +93,41 @@ export async function deleteCustomer(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+function dedupKey(name: string, company: string): string {
+  return `${name.trim().toLowerCase().replace(/\s+/g, " ")}||${company.trim().toLowerCase().replace(/\s+/g, " ")}`;
+}
+
 export async function importCustomers(
   customers: Omit<Customer, "id">[],
 ): Promise<{ inserted: number; skipped: number }> {
   if (customers.length === 0) return { inserted: 0, skipped: 0 };
 
   const existing = await getCustomers();
+
   const existingEmails = new Set(
     existing.map((c) => c.email.trim().toLowerCase()).filter(Boolean),
   );
+  const existingNameCompany = new Set(
+    existing
+      .map((c) => dedupKey(c.name, c.company))
+      .filter((k) => k !== "||"),
+  );
 
-  const seen = new Set<string>();
+  const seenEmails = new Set<string>();
+  const seenNC = new Set<string>();
   const unique: Omit<Customer, "id">[] = [];
 
   for (const c of customers) {
     const email = c.email.trim().toLowerCase();
-    if (!email || existingEmails.has(email) || seen.has(email)) continue;
-    seen.add(email);
+    const nc = dedupKey(c.name, c.company);
+
+    const emailDup = email && (existingEmails.has(email) || seenEmails.has(email));
+    const ncDup = nc !== "||" && (existingNameCompany.has(nc) || seenNC.has(nc));
+
+    if (emailDup || ncDup) continue;
+
+    if (email) seenEmails.add(email);
+    if (nc !== "||") seenNC.add(nc);
     unique.push(c);
   }
 
