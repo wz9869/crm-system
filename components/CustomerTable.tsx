@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Customer } from "@/lib/types";
+import type { Profile } from "@/lib/storage";
 import { categorize, categoryColor } from "@/lib/categories";
 import { LevelBadge } from "./LevelBadge";
 import { StatusBadge } from "./StatusBadge";
@@ -12,6 +13,9 @@ type SortDir = "asc" | "desc" | null;
 interface Props {
   customers: Customer[];
   onDelete?: (id: string) => void;
+  onAssign?: (customerId: string, ownerId: string) => void;
+  onUnassign?: (customerId: string) => void;
+  staffList?: Profile[];
 }
 
 function daysAgo(dateStr: string | null): number | null {
@@ -29,9 +33,17 @@ function parseDate(v: string): number {
 
 const PAGE_SIZE = 50;
 
-export function CustomerTable({ customers, onDelete }: Props) {
+export function CustomerTable({ customers, onDelete, onAssign, onUnassign, staffList }: Props) {
   const [dateSort, setDateSort] = useState<SortDir>(null);
   const [page, setPage] = useState(0);
+
+  const isAdmin = !!onAssign;
+
+  const staffMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of staffList ?? []) m.set(s.id, s.email);
+    return m;
+  }, [staffList]);
 
   const sorted = useMemo(() => {
     if (!dateSort) return customers;
@@ -45,7 +57,6 @@ export function CustomerTable({ customers, onDelete }: Props) {
   const safePage = Math.min(page, totalPages - 1);
   const paged = sorted.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
-  // Reset to page 0 when customer list changes (filters)
   useMemo(() => setPage(0), [customers]);
 
   const toggleSort = () => {
@@ -83,14 +94,17 @@ export function CustomerTable({ customers, onDelete }: Props) {
             <th className="px-4 py-3 font-medium">CATEGORY</th>
             <th className="px-4 py-3 font-medium">LEVEL</th>
             <th className="px-4 py-3 font-medium">STATUS</th>
+            {isAdmin && <th className="px-4 py-3 font-medium">OWNER</th>}
             <th className="px-4 py-3 font-medium">LAST CONTACT</th>
-            {onDelete && <th className="px-4 py-3 font-medium">ACTIONS</th>}
+            {(onDelete || isAdmin) && <th className="px-4 py-3 font-medium">ACTIONS</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {paged.map((c) => {
             const days = daysAgo(c.last_contacted_at);
             const stale = days !== null && days >= 7;
+            const ownerEmail = c.owner_id ? staffMap.get(c.owner_id) : null;
+
             return (
               <tr key={c.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3 text-slate-700">{c.apply_month || "—"}</td>
@@ -120,6 +134,21 @@ export function CustomerTable({ customers, onDelete }: Props) {
                 <td className="px-4 py-3">
                   <StatusBadge status={c.status} />
                 </td>
+                {isAdmin && (
+                  <td className="px-4 py-3">
+                    {c.is_public_pool ? (
+                      <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-700">
+                        Public Pool
+                      </span>
+                    ) : ownerEmail ? (
+                      <span className="text-xs text-slate-600" title={ownerEmail}>
+                        {ownerEmail.split("@")[0]}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
+                  </td>
+                )}
                 <td className="px-4 py-3">
                   {days === null ? (
                     <span className="text-slate-400">—</span>
@@ -130,17 +159,49 @@ export function CustomerTable({ customers, onDelete }: Props) {
                     </span>
                   )}
                 </td>
-                {onDelete && (
+                {(onDelete || isAdmin) && (
                   <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm("Delete this customer?")) onDelete(c.id);
-                      }}
-                      className="rounded-md border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {isAdmin && c.is_public_pool && onAssign && staffList && staffList.length > 0 && (
+                        <select
+                          defaultValue=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              onAssign(c.id, e.target.value);
+                              e.target.value = "";
+                            }
+                          }}
+                          className="rounded-md border border-emerald-300 px-1.5 py-1 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                        >
+                          <option value="">Assign →</option>
+                          {staffList.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.email.split("@")[0]}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {isAdmin && !c.is_public_pool && c.owner_id && onUnassign && (
+                        <button
+                          type="button"
+                          onClick={() => onUnassign(c.id)}
+                          className="rounded-md border border-amber-300 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50"
+                        >
+                          Unassign
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm("Delete this customer?")) onDelete(c.id);
+                          }}
+                          className="rounded-md border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </td>
                 )}
               </tr>

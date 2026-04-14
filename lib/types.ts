@@ -19,6 +19,8 @@ export interface Customer {
   status: CustomerStatus;
   last_contacted_at: string | null;
   created_by: string | null;
+  owner_id: string | null;
+  is_public_pool: boolean;
 }
 
 export interface FollowUp {

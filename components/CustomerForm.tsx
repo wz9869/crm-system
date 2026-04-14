@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { CUSTOMER_LEVELS, CUSTOMER_STATUSES, type Customer } from "@/lib/types";
 
-type FormValue = Omit<Customer, "id" | "created_by">;
+type FormValue = Omit<Customer, "id" | "created_by" | "owner_id" | "is_public_pool">;
 
 interface Props {
   open: boolean;

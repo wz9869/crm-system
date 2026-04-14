@@ -62,11 +62,17 @@ export default function CustomerDetailPage() {
     if (!authLoading && user) void load();
   }, [authLoading, user, load]);
 
-  const handleEdit = async (data: Omit<Customer, "id" | "created_by">) => {
+  const handleEdit = async (data: Omit<Customer, "id" | "created_by" | "owner_id" | "is_public_pool">) => {
     if (!customer) return;
     setSubmitting(true);
     try {
-      await updateCustomer({ ...data, id: customer.id, created_by: customer.created_by });
+      await updateCustomer({
+        ...data,
+        id: customer.id,
+        created_by: customer.created_by,
+        owner_id: customer.owner_id,
+        is_public_pool: customer.is_public_pool,
+      });
       await load();
       setEditOpen(false);
     } catch (e) {

@@ -25,6 +25,8 @@ function toInsertRow(c: Omit<Customer, "id">) {
     status: c.status || "new",
     last_contacted_at: c.last_contacted_at || null,
     created_by: c.created_by,
+    owner_id: c.owner_id ?? null,
+    is_public_pool: c.is_public_pool ?? true,
   };
 }
 
@@ -44,6 +46,8 @@ function fromRow(row: Record<string, unknown>): Customer {
     status: ((row.status as string) ?? "new") as Customer["status"],
     last_contacted_at: (row.last_contacted_at as string) ?? null,
     created_by: (row.created_by as string) ?? null,
+    owner_id: (row.owner_id as string) ?? null,
+    is_public_pool: (row.is_public_pool as boolean) ?? true,
   };
 }
 
@@ -145,6 +149,32 @@ export async function importCustomers(
     inserted += count ?? batch.length;
   }
   return { inserted, skipped };
+}
+
+export async function getMyCustomers(userId: string): Promise<Customer[]> {
+  const { data, error } = await sb()
+    .from("customers")
+    .select("*")
+    .eq("owner_id", userId)
+    .order("name", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(fromRow);
+}
+
+export async function assignCustomer(customerId: string, ownerId: string): Promise<void> {
+  const { error } = await sb()
+    .from("customers")
+    .update({ owner_id: ownerId, is_public_pool: false })
+    .eq("id", customerId);
+  if (error) throw new Error(error.message);
+}
+
+export async function unassignCustomer(customerId: string): Promise<void> {
+  const { error } = await sb()
+    .from("customers")
+    .update({ owner_id: null, is_public_pool: true })
+    .eq("id", customerId);
+  if (error) throw new Error(error.message);
 }
 
 // ──── Profiles ────
