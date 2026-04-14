@@ -7,9 +7,15 @@ export async function POST(req: NextRequest) {
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!url || !serviceKey || !anonKey) {
+    const missing = [
+      !url && "SUPABASE_URL",
+      !anonKey && "ANON_KEY",
+      !serviceKey && "SERVICE_ROLE_KEY",
+    ].filter(Boolean);
+
+    if (missing.length > 0) {
       return NextResponse.json(
-        { error: "Server configuration missing" },
+        { error: `Missing env: ${missing.join(", ")}` },
         { status: 500 },
       );
     }
