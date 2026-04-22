@@ -52,7 +52,7 @@ export default function HomePage() {
       if (isAdmin) {
         const [custs, profiles] = await Promise.all([getCustomers(), getProfiles()]);
         setCustomers(custs);
-        setStaffList(profiles.filter((p) => p.role === "staff"));
+        setStaffList(profiles);
       } else if (user) {
         setCustomers(await getMyCustomers(user.id));
       }
