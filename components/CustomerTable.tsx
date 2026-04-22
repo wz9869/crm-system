@@ -15,6 +15,7 @@ interface Props {
   onDelete?: (id: string) => void;
   onAssign?: (customerId: string, ownerId: string) => void;
   onUnassign?: (customerId: string) => void;
+  onBulkAssign?: (customerIds: string[], ownerId: string) => void;
   staffList?: Profile[];
 }
 
@@ -33,9 +34,12 @@ function parseDate(v: string): number {
 
 const PAGE_SIZE = 50;
 
-export function CustomerTable({ customers, onDelete, onAssign, onUnassign, staffList }: Props) {
+export function CustomerTable({ customers, onDelete, onAssign, onUnassign, onBulkAssign, staffList }: Props) {
   const [dateSort, setDateSort] = useState<SortDir>(null);
   const [page, setPage] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkOwnerId, setBulkOwnerId] = useState("");
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const isAdmin = !!onAssign;
 
@@ -70,6 +74,51 @@ export function CustomerTable({ customers, onDelete, onAssign, onUnassign, staff
 
   const sortIcon = dateSort === "asc" ? " ↑" : dateSort === "desc" ? " ↓" : " ↕";
 
+  // Bulk selection helpers — only pool customers on the current page can be bulk-assigned
+  const selectableIds = useMemo(
+    () => paged.filter((c) => c.is_public_pool).map((c) => c.id),
+    [paged],
+  );
+  const allPageSelected =
+    selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id));
+
+  const toggleSelectAll = () => {
+    if (allPageSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        selectableIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        selectableIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  };
+
+  const toggleRow = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkAssign = async () => {
+    if (!bulkOwnerId || selectedIds.size === 0 || !onBulkAssign) return;
+    setBulkLoading(true);
+    try {
+      await onBulkAssign(Array.from(selectedIds), bulkOwnerId);
+      setSelectedIds(new Set());
+      setBulkOwnerId("");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   if (customers.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
@@ -80,9 +129,58 @@ export function CustomerTable({ customers, onDelete, onAssign, onUnassign, staff
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
+
+      {/* Bulk action bar */}
+      {isAdmin && onBulkAssign && selectedIds.size > 0 && staffList && staffList.length > 0 && (
+        <div className="flex items-center gap-3 border-b border-emerald-200 bg-emerald-50 px-4 py-2.5">
+          <span className="text-sm font-medium text-emerald-800">
+            {selectedIds.size} selected
+          </span>
+          <select
+            value={bulkOwnerId}
+            onChange={(e) => setBulkOwnerId(e.target.value)}
+            className="rounded-md border border-emerald-300 px-2 py-1 text-sm text-emerald-700 bg-white"
+          >
+            <option value="">Assign to…</option>
+            {staffList.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.email.split("@")[0]}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={!bulkOwnerId || bulkLoading}
+            onClick={handleBulkAssign}
+            className="rounded-md bg-emerald-600 px-3 py-1 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40"
+          >
+            {bulkLoading ? "Assigning…" : "Confirm Assign"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedIds(new Set())}
+            className="ml-auto text-xs text-slate-500 hover:text-slate-800 underline"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
+
       <table className="w-full text-sm">
         <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
           <tr>
+            {isAdmin && onBulkAssign && (
+              <th className="px-3 py-3 w-8">
+                <input
+                  type="checkbox"
+                  checked={allPageSelected}
+                  onChange={toggleSelectAll}
+                  disabled={selectableIds.length === 0}
+                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  title="Select all pool customers on this page"
+                />
+              </th>
+            )}
             <th className="px-4 py-3 font-medium">
               <button type="button" onClick={toggleSort} className="inline-flex items-center gap-1 hover:text-slate-900">
                 APPLICATION DATE<span className="text-xs">{sortIcon}</span>
@@ -106,7 +204,21 @@ export function CustomerTable({ customers, onDelete, onAssign, onUnassign, staff
             const ownerEmail = c.owner_id ? staffMap.get(c.owner_id) : null;
 
             return (
-              <tr key={c.id} className="hover:bg-slate-50">
+              <tr key={c.id} className={`hover:bg-slate-50 ${selectedIds.has(c.id) ? "bg-emerald-50" : ""}`}>
+                {isAdmin && onBulkAssign && (
+                  <td className="px-3 py-3">
+                    {c.is_public_pool ? (
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(c.id)}
+                        onChange={() => toggleRow(c.id)}
+                        className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      />
+                    ) : (
+                      <span className="block w-4" />
+                    )}
+                  </td>
+                )}
                 <td className="px-4 py-3 text-slate-700">{c.apply_month || "—"}</td>
                 <td className="px-4 py-3">
                   <Link

@@ -177,6 +177,15 @@ export async function unassignCustomer(customerId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+export async function assignCustomersBulk(customerIds: string[], ownerId: string): Promise<void> {
+  if (customerIds.length === 0) return;
+  const { error } = await sb()
+    .from("customers")
+    .update({ owner_id: ownerId, is_public_pool: false })
+    .in("id", customerIds);
+  if (error) throw new Error(error.message);
+}
+
 // ──── Profiles ────
 
 export interface Profile {

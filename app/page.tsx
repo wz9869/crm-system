@@ -10,6 +10,7 @@ import {
   importCustomers,
   assignCustomer,
   unassignCustomer,
+  assignCustomersBulk,
   getProfiles,
   type Profile,
 } from "@/lib/storage";
@@ -157,6 +158,17 @@ export default function HomePage() {
     }
   };
 
+  const handleBulkAssign = async (customerIds: string[], ownerId: string) => {
+    try {
+      await assignCustomersBulk(customerIds, ownerId);
+      await load();
+      const staff = staffList.find((s) => s.id === ownerId);
+      setMsg(`${customerIds.length} customer(s) assigned to ${staff?.email.split("@")[0] ?? ownerId}.`);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed");
+    }
+  };
+
   if (authLoading) return null;
 
   const poolCounts = isAdmin
@@ -252,6 +264,7 @@ export default function HomePage() {
             onDelete={isAdmin ? handleDelete : undefined}
             onAssign={isAdmin ? handleAssign : undefined}
             onUnassign={isAdmin ? handleUnassign : undefined}
+            onBulkAssign={isAdmin ? handleBulkAssign : undefined}
             staffList={isAdmin ? staffList : undefined}
           />
         )}
