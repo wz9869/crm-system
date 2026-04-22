@@ -40,7 +40,7 @@ export default function HomePage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [staffList, setStaffList] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<FilterState>({ keyword: "", level: "ALL", status: "ALL", state: "ALL", category: "ALL" });
+  const [filters, setFilters] = useState<FilterState>({ keyword: "", level: "ALL", status: "ALL", state: "ALL", category: "ALL", ownerId: "ALL" });
   const [poolTab, setPoolTab] = useState<PoolTab>("all");
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -85,6 +85,8 @@ export default function HomePage() {
       if (filters.status !== "ALL" && c.status !== filters.status) return false;
       if (filters.category !== "ALL" && categorize(c.business_type) !== filters.category) return false;
       if (filters.state !== "ALL" && extractStateAbbr(c.address) !== filters.state) return false;
+      if (filters.ownerId === "POOL" && !c.is_public_pool) return false;
+      if (filters.ownerId !== "ALL" && filters.ownerId !== "POOL" && c.owner_id !== filters.ownerId) return false;
       if (filters.keyword) {
         const kw = filters.keyword.toLowerCase();
         const hay = [c.name, c.company, c.email, c.phone, c.address].join(" ").toLowerCase();
@@ -245,7 +247,7 @@ export default function HomePage() {
           </div>
         )}
 
-        <FilterBar filters={filters} stateOptions={stateOptions} onChange={setFilters} />
+        <FilterBar filters={filters} stateOptions={stateOptions} staffList={isAdmin ? staffList : undefined} onChange={setFilters} />
 
         {msg && (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
