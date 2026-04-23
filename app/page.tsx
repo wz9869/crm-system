@@ -125,6 +125,25 @@ export default function HomePage() {
     return { total, aCount, followingCount, staleCount };
   }, [customers]);
 
+  // Reminder alerts — scoped to current user's customers
+  const reminderAlerts = useMemo(() => {
+    const now = Date.now();
+    const mine = isAdmin ? customers : customers.filter((c) => c.owner_id === user?.id);
+
+    const overdueReminders = mine.filter(
+      (c) => c.next_follow_up_at && new Date(c.next_follow_up_at).getTime() <= now && c.status !== "closed" && c.status !== "invalid",
+    );
+
+    const staleAB = mine.filter((c) => {
+      if (c.status === "closed" || c.status === "invalid") return false;
+      if (c.level !== "A" && c.level !== "B") return false;
+      const d = daysAgo(c.last_contacted_at);
+      return d === null || d >= 7;
+    });
+
+    return { overdueReminders, staleAB };
+  }, [customers, isAdmin, user]);
+
   const handleAdd = async (data: Omit<Customer, "id" | "created_by" | "owner_id" | "is_public_pool">) => {
     if (!user) return;
     setSubmitting(true);
@@ -240,6 +259,58 @@ export default function HomePage() {
         </div>
 
         <StatsCards {...stats} />
+
+        {/* Follow-up reminder banner */}
+        {!loading && (reminderAlerts.overdueReminders.length > 0 || reminderAlerts.staleAB.length > 0) && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm space-y-3">
+            <p className="text-sm font-semibold text-red-700">🔔 Action needed today</p>
+
+            {reminderAlerts.overdueReminders.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-red-600 mb-1.5">
+                  Overdue reminders ({reminderAlerts.overdueReminders.length})
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {reminderAlerts.overdueReminders.map((c) => (
+                    <a
+                      key={c.id}
+                      href={`/customers/${c.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
+                    >
+                      <span>{c.name}</span>
+                      <span className="text-red-400">{c.company ? `· ${c.company}` : ""}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {reminderAlerts.staleAB.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-amber-600 mb-1.5">
+                  A/B customers — no contact in 7+ days ({reminderAlerts.staleAB.length})
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {reminderAlerts.staleAB.slice(0, 10).map((c) => (
+                    <a
+                      key={c.id}
+                      href={`/customers/${c.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100"
+                    >
+                      <span>{c.name}</span>
+                      <span className="text-amber-400">{c.company ? `· ${c.company}` : ""}</span>
+                    </a>
+                  ))}
+                  {reminderAlerts.staleAB.length > 10 && (
+                    <span className="inline-flex items-center px-3 py-1.5 text-xs text-amber-500">
+                      +{reminderAlerts.staleAB.length - 10} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Admin pool tabs */}
         {isAdmin && poolCounts && (
