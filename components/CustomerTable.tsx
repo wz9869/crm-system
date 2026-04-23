@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Customer } from "@/lib/types";
 import type { Profile } from "@/lib/storage";
@@ -9,15 +9,6 @@ import { LevelBadge } from "./LevelBadge";
 import { StatusBadge } from "./StatusBadge";
 
 type SortDir = "asc" | "desc" | null;
-
-interface Props {
-  customers: Customer[];
-  onDelete?: (id: string) => void;
-  onAssign?: (customerId: string, ownerId: string) => void;
-  onUnassign?: (customerId: string) => void;
-  onBulkAssign?: (customerIds: string[], ownerId: string) => void;
-  staffList?: Profile[];
-}
 
 function daysAgo(dateStr: string | null): number | null {
   if (!dateStr) return null;
@@ -34,9 +25,19 @@ function parseDate(v: string): number {
 
 const PAGE_SIZE = 50;
 
-export function CustomerTable({ customers, onDelete, onAssign, onUnassign, onBulkAssign, staffList }: Props) {
+interface Props {
+  customers: Customer[];
+  page: number;
+  onPageChange: (p: number) => void;
+  onDelete?: (id: string) => void;
+  onAssign?: (customerId: string, ownerId: string) => void;
+  onUnassign?: (customerId: string) => void;
+  onBulkAssign?: (customerIds: string[], ownerId: string) => void;
+  staffList?: Profile[];
+}
+
+export function CustomerTable({ customers, page, onPageChange, onDelete, onAssign, onUnassign, onBulkAssign, staffList }: Props) {
   const [dateSort, setDateSort] = useState<SortDir>(null);
-  const [page, setPage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkOwnerId, setBulkOwnerId] = useState("");
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -61,7 +62,8 @@ export function CustomerTable({ customers, onDelete, onAssign, onUnassign, onBul
   const safePage = Math.min(page, totalPages - 1);
   const paged = sorted.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
-  useMemo(() => setPage(0), [customers]);
+  // Reset to page 0 whenever the customer list changes (filter/tab applied upstream)
+  useEffect(() => { onPageChange(0); }, [customers]);
 
   const toggleSort = () => {
     setDateSort((prev) => {
@@ -69,7 +71,7 @@ export function CustomerTable({ customers, onDelete, onAssign, onUnassign, onBul
       if (prev === "desc") return "asc";
       return null;
     });
-    setPage(0);
+    onPageChange(0);
   };
 
   const sortIcon = dateSort === "asc" ? " ↑" : dateSort === "desc" ? " ↓" : " ↕";
@@ -331,7 +333,7 @@ export function CustomerTable({ customers, onDelete, onAssign, onUnassign, onBul
             <button
               type="button"
               disabled={safePage === 0}
-              onClick={() => setPage(safePage - 1)}
+              onClick={() => onPageChange(safePage - 1)}
               className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-40"
             >
               ← Prev
@@ -342,7 +344,7 @@ export function CustomerTable({ customers, onDelete, onAssign, onUnassign, onBul
             <button
               type="button"
               disabled={safePage >= totalPages - 1}
-              onClick={() => setPage(safePage + 1)}
+              onClick={() => onPageChange(safePage + 1)}
               className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-40"
             >
               Next →

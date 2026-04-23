@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
   getCustomers,
@@ -34,18 +35,44 @@ function daysAgo(d: string | null): number | null {
   return Math.floor((Date.now() - t) / 86400000);
 }
 
-export default function HomePage() {
+function HomePageInner() {
   const { user, role, loading: authLoading } = useAuth();
   const isAdmin = role === "admin";
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [staffList, setStaffList] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<FilterState>({ keyword: "", level: "ALL", status: "ALL", state: "ALL", category: "ALL", ownerId: "ALL" });
-  const [poolTab, setPoolTab] = useState<PoolTab>("all");
+  const [filters, setFilters] = useState<FilterState>({
+    keyword:  searchParams.get("keyword")  ?? "",
+    level:    searchParams.get("level")    ?? "ALL",
+    status:   searchParams.get("status")   ?? "ALL",
+    state:    searchParams.get("state")    ?? "ALL",
+    category: searchParams.get("category") ?? "ALL",
+    ownerId:  searchParams.get("ownerId")  ?? "ALL",
+  });
+  const [poolTab, setPoolTab] = useState<PoolTab>((searchParams.get("tab") as PoolTab) ?? "all");
+  const [page, setPage] = useState(Number(searchParams.get("page") ?? 0));
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState("");
+
+  // Sync state → URL (replaces history entry so Back still works)
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (filters.keyword)          p.set("keyword",  filters.keyword);
+    if (filters.level  !== "ALL") p.set("level",    filters.level);
+    if (filters.status !== "ALL") p.set("status",   filters.status);
+    if (filters.state  !== "ALL") p.set("state",    filters.state);
+    if (filters.category !== "ALL") p.set("category", filters.category);
+    if (filters.ownerId  !== "ALL") p.set("ownerId",  filters.ownerId);
+    if (poolTab !== "all")        p.set("tab",      poolTab);
+    if (page > 0)                 p.set("page",     String(page));
+    const qs = p.toString();
+    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
+  }, [filters, poolTab, page]);
 
   const load = useCallback(async () => {
     try {
@@ -140,6 +167,9 @@ export default function HomePage() {
     setMsg(`Imported ${inserted}, skipped ${skipped} duplicates.`);
   };
 
+  const handleFilterChange = (next: FilterState) => { setFilters(next); setPage(0); };
+  const handleTabChange = (tab: PoolTab) => { setPoolTab(tab); setPage(0); };
+
   const handleAssign = async (customerId: string, ownerId: string) => {
     try {
       await assignCustomer(customerId, ownerId);
@@ -233,7 +263,7 @@ export default function HomePage() {
                 <button
                   key={tab}
                   type="button"
-                  onClick={() => setPoolTab(tab)}
+                  onClick={() => handleTabChange(tab)}
                   className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     poolTab === tab
                       ? "bg-emerald-600 text-white"
@@ -247,7 +277,7 @@ export default function HomePage() {
           </div>
         )}
 
-        <FilterBar filters={filters} stateOptions={stateOptions} staffList={isAdmin ? staffList : undefined} onChange={setFilters} />
+                  <FilterBar filters={filters} stateOptions={stateOptions} staffList={isAdmin ? staffList : undefined} onChange={handleFilterChange} />
 
         {msg && (
           <div className="flex items-start justify-between gap-3 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 shadow-sm">
@@ -265,14 +295,16 @@ export default function HomePage() {
         {loading ? (
           <p className="text-sm text-slate-500">Loading...</p>
         ) : (
-          <CustomerTable
-            customers={filtered}
-            onDelete={isAdmin ? handleDelete : undefined}
-            onAssign={isAdmin ? handleAssign : undefined}
-            onUnassign={isAdmin ? handleUnassign : undefined}
-            onBulkAssign={isAdmin ? handleBulkAssign : undefined}
-            staffList={isAdmin ? staffList : undefined}
-          />
+                  <CustomerTable
+                    customers={filtered}
+                    page={page}
+                    onPageChange={setPage}
+                    onDelete={isAdmin ? handleDelete : undefined}
+                    onAssign={isAdmin ? handleAssign : undefined}
+                    onUnassign={isAdmin ? handleUnassign : undefined}
+                    onBulkAssign={isAdmin ? handleBulkAssign : undefined}
+                    staffList={isAdmin ? staffList : undefined}
+                  />
         )}
 
         {isAdmin && (
@@ -293,5 +325,13 @@ export default function HomePage() {
         )}
       </main>
     </>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense>
+      <HomePageInner />
+    </Suspense>
   );
 }
