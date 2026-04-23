@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Customer } from "@/lib/types";
 import type { Profile } from "@/lib/storage";
@@ -62,8 +62,6 @@ export function CustomerTable({ customers, page, onPageChange, onDelete, onAssig
   const safePage = Math.min(page, totalPages - 1);
   const paged = sorted.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
-  // Reset to page 0 whenever the customer list changes (filter/tab applied upstream)
-  useEffect(() => { onPageChange(0); }, [customers]);
 
   const toggleSort = () => {
     setDateSort((prev) => {

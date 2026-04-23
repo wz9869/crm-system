@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -58,18 +58,21 @@ function HomePageInner() {
   const [importOpen, setImportOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState("");
+  // Prevent URL sync on very first render (state was just read FROM the URL)
+  const syncReady = useRef(false);
 
   // Sync state → URL (replaces history entry so Back still works)
   useEffect(() => {
+    if (!syncReady.current) { syncReady.current = true; return; }
     const p = new URLSearchParams();
-    if (filters.keyword)          p.set("keyword",  filters.keyword);
-    if (filters.level  !== "ALL") p.set("level",    filters.level);
-    if (filters.status !== "ALL") p.set("status",   filters.status);
-    if (filters.state  !== "ALL") p.set("state",    filters.state);
+    if (filters.keyword)            p.set("keyword",  filters.keyword);
+    if (filters.level  !== "ALL")   p.set("level",    filters.level);
+    if (filters.status !== "ALL")   p.set("status",   filters.status);
+    if (filters.state  !== "ALL")   p.set("state",    filters.state);
     if (filters.category !== "ALL") p.set("category", filters.category);
     if (filters.ownerId  !== "ALL") p.set("ownerId",  filters.ownerId);
-    if (poolTab !== "all")        p.set("tab",      poolTab);
-    if (page > 0)                 p.set("page",     String(page));
+    if (poolTab !== "all")          p.set("tab",      poolTab);
+    if (page > 0)                   p.set("page",     String(page));
     const qs = p.toString();
     router.replace(qs ? `/?${qs}` : "/", { scroll: false });
   }, [filters, poolTab, page]);
