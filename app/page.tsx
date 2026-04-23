@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import {
   getCustomers,
@@ -28,6 +27,15 @@ import { ImportCustomers } from "@/components/ImportCustomers";
 
 type PoolTab = "all" | "pool" | "assigned";
 
+const SESSION_KEY = "crm_list_state";
+const DEFAULT_FILTERS: FilterState = { keyword: "", level: "ALL", status: "ALL", state: "ALL", category: "ALL", ownerId: "ALL" };
+
+function readSession(): { filters: FilterState; poolTab: PoolTab; page: number } | null {
+  if (typeof window === "undefined") return null;
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "null"); }
+  catch { return null; }
+}
+
 function daysAgo(d: string | null): number | null {
   if (!d) return null;
   const t = new Date(d).getTime();
@@ -35,46 +43,26 @@ function daysAgo(d: string | null): number | null {
   return Math.floor((Date.now() - t) / 86400000);
 }
 
-function HomePageInner() {
+export default function HomePage() {
   const { user, role, loading: authLoading } = useAuth();
   const isAdmin = role === "admin";
-  const router = useRouter();
-  const searchParams = useSearchParams();
 
+  // Restore state from sessionStorage so switching tabs / navigating away doesn't lose position
+  const saved = useMemo(() => readSession(), []);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [staffList, setStaffList] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<FilterState>({
-    keyword:  searchParams.get("keyword")  ?? "",
-    level:    searchParams.get("level")    ?? "ALL",
-    status:   searchParams.get("status")   ?? "ALL",
-    state:    searchParams.get("state")    ?? "ALL",
-    category: searchParams.get("category") ?? "ALL",
-    ownerId:  searchParams.get("ownerId")  ?? "ALL",
-  });
-  const [poolTab, setPoolTab] = useState<PoolTab>((searchParams.get("tab") as PoolTab) ?? "all");
-  const [page, setPage] = useState(Number(searchParams.get("page") ?? 0));
+  const [filters, setFilters] = useState<FilterState>(saved?.filters ?? DEFAULT_FILTERS);
+  const [poolTab, setPoolTab] = useState<PoolTab>(saved?.poolTab ?? "all");
+  const [page, setPage] = useState<number>(saved?.page ?? 0);
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState("");
-  // Prevent URL sync on very first render (state was just read FROM the URL)
-  const syncReady = useRef(false);
 
-  // Sync state → URL (replaces history entry so Back still works)
+  // Persist list state so it survives tab switches and back-navigation
   useEffect(() => {
-    if (!syncReady.current) { syncReady.current = true; return; }
-    const p = new URLSearchParams();
-    if (filters.keyword)            p.set("keyword",  filters.keyword);
-    if (filters.level  !== "ALL")   p.set("level",    filters.level);
-    if (filters.status !== "ALL")   p.set("status",   filters.status);
-    if (filters.state  !== "ALL")   p.set("state",    filters.state);
-    if (filters.category !== "ALL") p.set("category", filters.category);
-    if (filters.ownerId  !== "ALL") p.set("ownerId",  filters.ownerId);
-    if (poolTab !== "all")          p.set("tab",      poolTab);
-    if (page > 0)                   p.set("page",     String(page));
-    const qs = p.toString();
-    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ filters, poolTab, page }));
   }, [filters, poolTab, page]);
 
   const load = useCallback(async () => {
@@ -328,13 +316,5 @@ function HomePageInner() {
         )}
       </main>
     </>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <Suspense>
-      <HomePageInner />
-    </Suspense>
   );
 }
