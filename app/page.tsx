@@ -250,10 +250,14 @@ export default function HomePage() {
         <FilterBar filters={filters} stateOptions={stateOptions} staffList={isAdmin ? staffList : undefined} onChange={setFilters} />
 
         {msg && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-            {msg}
-            <button type="button" onClick={() => setMsg("")} className="ml-2 font-medium underline">
-              dismiss
+          <div className="flex items-start justify-between gap-3 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 shadow-sm">
+            <span>✓ {msg}</span>
+            <button
+              type="button"
+              onClick={() => setMsg("")}
+              className="shrink-0 rounded-md border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
+            >
+              Close
             </button>
           </div>
         )}
