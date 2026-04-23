@@ -202,6 +202,9 @@ export function CustomerTable({ customers, page, onPageChange, onDelete, onAssig
             const days = daysAgo(c.last_contacted_at);
             const stale = days !== null && days >= 7;
             const ownerEmail = c.owner_id ? staffMap.get(c.owner_id) : null;
+            const reminderDue = c.next_follow_up_at
+              ? Math.floor((new Date(c.next_follow_up_at).getTime() - Date.now()) / 86400000) <= 0
+              : false;
 
             return (
               <tr key={c.id} className={`hover:bg-slate-50 ${selectedIds.has(c.id) ? "bg-emerald-50" : ""}`}>
@@ -223,9 +226,12 @@ export function CustomerTable({ customers, page, onPageChange, onDelete, onAssig
                 <td className="px-4 py-3">
                   <Link
                     href={`/customers/${c.id}`}
-                    className="font-medium text-slate-900 hover:text-emerald-600 hover:underline"
+                    className="inline-flex items-center gap-1 font-medium text-slate-900 hover:text-emerald-600 hover:underline"
                   >
                     {c.name || "—"}
+                    {reminderDue && (
+                      <span title="Follow-up overdue" className="text-red-500 text-xs">🔔</span>
+                    )}
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-slate-700 break-all">{c.email || "—"}</td>

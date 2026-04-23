@@ -27,6 +27,7 @@ const empty: FormValue = {
   level: "C",
   status: "new",
   last_contacted_at: null,
+  next_follow_up_at: null,
 };
 
 const inp =

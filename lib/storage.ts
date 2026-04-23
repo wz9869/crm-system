@@ -24,6 +24,7 @@ function toInsertRow(c: Omit<Customer, "id">) {
     level: c.level || "C",
     status: c.status || "new",
     last_contacted_at: c.last_contacted_at || null,
+    next_follow_up_at: c.next_follow_up_at || null,
     created_by: c.created_by,
     owner_id: c.owner_id ?? null,
     is_public_pool: c.is_public_pool ?? true,
@@ -45,6 +46,7 @@ function fromRow(row: Record<string, unknown>): Customer {
     level: ((row.level as string) ?? "C") as Customer["level"],
     status: ((row.status as string) ?? "new") as Customer["status"],
     last_contacted_at: (row.last_contacted_at as string) ?? null,
+    next_follow_up_at: (row.next_follow_up_at as string) ?? null,
     created_by: (row.created_by as string) ?? null,
     owner_id: (row.owner_id as string) ?? null,
     is_public_pool: (row.is_public_pool as boolean) ?? true,
@@ -173,6 +175,14 @@ export async function unassignCustomer(customerId: string): Promise<void> {
   const { error } = await sb()
     .from("customers")
     .update({ owner_id: null, is_public_pool: true })
+    .eq("id", customerId);
+  if (error) throw new Error(error.message);
+}
+
+export async function setFollowUpReminder(customerId: string, date: string | null): Promise<void> {
+  const { error } = await sb()
+    .from("customers")
+    .update({ next_follow_up_at: date })
     .eq("id", customerId);
   if (error) throw new Error(error.message);
 }

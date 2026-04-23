@@ -8,6 +8,7 @@ import {
   updateCustomer,
   getFollowUps,
   addFollowUp,
+  setFollowUpReminder,
 } from "@/lib/storage";
 import type { Customer, FollowUp } from "@/lib/types";
 import { Navbar } from "@/components/Navbar";
@@ -47,6 +48,8 @@ export default function CustomerDetailPage() {
   const [fuContent, setFuContent] = useState("");
   const [fuAction, setFuAction] = useState("");
   const [fuSaving, setFuSaving] = useState(false);
+  const [reminderDate, setReminderDate] = useState("");
+  const [reminderSaving, setReminderSaving] = useState(false);
 
   const load = useCallback(async () => {
     const [c, fus] = await Promise.all([
@@ -61,6 +64,26 @@ export default function CustomerDetailPage() {
   useEffect(() => {
     if (!authLoading && user) void load();
   }, [authLoading, user, load]);
+
+  useEffect(() => {
+    if (customer?.next_follow_up_at) {
+      setReminderDate(customer.next_follow_up_at.slice(0, 10));
+    }
+  }, [customer]);
+
+  const handleSetReminder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customer) return;
+    setReminderSaving(true);
+    try {
+      await setFollowUpReminder(customer.id, reminderDate || null);
+      await load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setReminderSaving(false);
+    }
+  };
 
   const handleEdit = async (data: Omit<Customer, "id" | "created_by" | "owner_id" | "is_public_pool">) => {
     if (!customer) return;
@@ -137,6 +160,12 @@ export default function CustomerDetailPage() {
     : null;
   const stale = lastDays === null || lastDays >= 7;
 
+  const reminderDays = customer.next_follow_up_at
+    ? Math.floor((new Date(customer.next_follow_up_at).getTime() - Date.now()) / 86400000)
+    : null;
+  const reminderOverdue = reminderDays !== null && reminderDays < 0;
+  const reminderToday = reminderDays !== null && reminderDays === 0;
+
   return (
     <>
       <Navbar />
@@ -146,7 +175,7 @@ export default function CustomerDetailPage() {
           <div>
             <button
               type="button"
-              onClick={() => router.push("/")}
+              onClick={() => router.back()}
               className="mb-1 text-sm text-slate-500 hover:text-emerald-600"
             >
               ← Back to list
@@ -167,8 +196,18 @@ export default function CustomerDetailPage() {
           </div>
         </div>
 
-        {/* Warning */}
-        {stale && (
+        {/* Reminder banner */}
+        {reminderOverdue && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+            🔔 Follow-up overdue! Was due {Math.abs(reminderDays!)} day{Math.abs(reminderDays!) !== 1 ? "s" : ""} ago.
+          </div>
+        )}
+        {reminderToday && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-700">
+            🔔 Follow-up due today!
+          </div>
+        )}
+        {!reminderOverdue && !reminderToday && stale && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
             ⚠️ No follow-up recorded in the last 7 days. Last contact: {daysAgo(customer.last_contacted_at)}
           </div>
@@ -184,6 +223,44 @@ export default function CustomerDetailPage() {
           <InfoRow label="Website" value={customer.website} />
           <InfoRow label="Apply Month" value={customer.apply_month} />
           <InfoRow label="Last Contact" value={daysAgo(customer.last_contacted_at)} />
+        </div>
+
+        {/* Follow-up Reminder */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-base font-semibold text-slate-900">Follow-up Reminder</h2>
+          <form onSubmit={handleSetReminder} className="flex flex-wrap items-center gap-3">
+            <input
+              type="date"
+              value={reminderDate}
+              onChange={(e) => setReminderDate(e.target.value)}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-emerald-200 focus:ring"
+            />
+            <button
+              type="submit"
+              disabled={reminderSaving}
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {reminderSaving ? "Saving..." : "Set Reminder"}
+            </button>
+            {customer.next_follow_up_at && (
+              <button
+                type="button"
+                onClick={async () => { setReminderDate(""); await setFollowUpReminder(customer.id, null); await load(); }}
+                className="text-sm text-slate-400 hover:text-red-500"
+              >
+                Clear
+              </button>
+            )}
+            {customer.next_follow_up_at && (
+              <span className="text-sm text-slate-500">
+                {reminderDays !== null && reminderDays > 0
+                  ? `Due in ${reminderDays} day${reminderDays !== 1 ? "s" : ""}`
+                  : reminderDays === 0
+                  ? "Due today"
+                  : `Overdue by ${Math.abs(reminderDays!)} day${Math.abs(reminderDays!) !== 1 ? "s" : ""}`}
+              </span>
+            )}
+          </form>
         </div>
 
         {/* Add Follow-up */}

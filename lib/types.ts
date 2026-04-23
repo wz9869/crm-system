@@ -18,6 +18,7 @@ export interface Customer {
   level: CustomerLevel;
   status: CustomerStatus;
   last_contacted_at: string | null;
+  next_follow_up_at: string | null;
   created_by: string | null;
   owner_id: string | null;
   is_public_pool: boolean;

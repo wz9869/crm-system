@@ -25,6 +25,13 @@ export function Navbar() {
           SmartWings Dealer CRM
         </button>
         <div className="flex items-center gap-3 text-sm">
+          <button
+            type="button"
+            onClick={() => router.push("/kanban")}
+            className="text-slate-600 hover:text-emerald-600"
+          >
+            Pipeline
+          </button>
           {role === "admin" && (
             <button
               type="button"
